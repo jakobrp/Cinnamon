@@ -12,6 +12,10 @@ from synthetic_tabular_data_generator.algorithms.llm_tabular import LlmTabularSy
 from synthetic_tabular_data_generator.algorithms.rtvae import RtvaeSynthesizer
 from synthetic_tabular_data_generator.algorithms.tvae import TvaeSynthesizer
 
+from synthetic_tabular_data_generator.algorithms.dpgan import DpganSynthesizer
+
+from synthetic_tabular_data_generator.algorithms.pategan import PateganSynthesizer
+
 synthesizer_classes = {
     'ctgan': {
         'version': '0.1',
@@ -84,5 +88,25 @@ synthesizer_classes = {
         'display_name': 'LLM Knowledge-grounded Text Synthesis',
         'description': 'Generate synthetic medical free-text fields using an LLM with dynamically selected similar original examples. Knowledge-base grounding is not implemented yet and is currently exposed only as NOT_IMPLEMENTED.',
         'URL': '/synthetic_tabular_data_generator/synthesizer_config/llm_nearest_neighbor_knowledge_grounded_text_synthesis.yaml'
+    },
+    'dpgan': {
+            'version': '0.1',
+            'type': 'cross-sectional',
+            'class': DpganSynthesizer,
+            'display_name': 'DP-GAN (Differentially Private Gan)',
+            'description': 'A differentially private GAN that trains its discriminator with DP-SGD to give the generated data a formal (epsilon, delta) privacy guarantee',
+            'URL': '/synthetic_tabular_data_generator/synthesizer_config/dpgan.yaml'
+    },
+    'pategan': {
+        'version': '0.1',
+        'type': 'cross-sectional',
+        'class': PateganSynthesizer,
+        'display_name': 'PATE-GAN (Private Aggregation of Teacher Ensembles)',
+        'description': 'A differentially private GAN that uses an ensemble of teacher models trained on disjoint subsets of the original data. Their predictions are privately aggregated to train the generator while providing a formal (epsilon, delta) privacy guarantee.',
+        'URL': '/synthetic_tabular_data_generator/synthesizer_config/pategan.yaml'
     }
+
+
+
+
 }
