@@ -37,6 +37,7 @@ services:
         environment:
             SPRING.SERVLET.MULTIPART.MAX-FILE-SIZE: ${MAX_FILE_SIZE_BYTES:-52428800}
             CINNAMON_MAX-FILE-SIZE: ${MAX_FILE_SIZE_BYTES:-52428800}
+            SPRING.SERVLET.MULTIPART.MAX-REQUEST-SIZE: ${MAX_FILE_SIZE_BYTES:-52428800}
 
             # Datasource has to match with the configuration of the cinnamon-db container
             SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
@@ -97,6 +98,8 @@ services:
             CINNAMON_LLM_TEMPERATURE: ${CINNAMON_LLM_TEMPERATURE:-}
             CINNAMON_LLM_TOP_P: ${CINNAMON_LLM_TOP_P:-}
             CINNAMON_LLM_MAX_TOKENS: ${CINNAMON_LLM_MAX_TOKENS:-}
+        volumes:
+             - ./cinnamon-synthetization:/app
     cinnamon-evaluation:
         image: ghcr.io/ki-aim/cinnamon-evaluation:latest
         container_name: cinnamon-evaluation
@@ -114,6 +117,8 @@ services:
             - "127.0.0.1:8000:8000"
         networks:
             - evaluation-network
+        volumes:
+            - ./cinnamon-risk-assessment:/app
     cinnamon-anonymization:
         image:  ghcr.io/ki-aim/cinnamon-anonymization:latest
         container_name: cinnamon-anonymization
