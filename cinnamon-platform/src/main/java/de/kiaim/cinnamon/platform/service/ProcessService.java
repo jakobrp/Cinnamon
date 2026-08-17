@@ -79,7 +79,7 @@ public class ProcessService {
 	 * Delay between responding to a finish callback and starting the next process.
 	 * Value is in seconds.
 	 */
-	private static final long DELAY_START_NEXT = 1;
+	private static final long DELAY_START_NEXT = 30;
 
 	private final boolean sslEnabled;
 	private final int port;
