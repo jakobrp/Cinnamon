@@ -1,0 +1,211 @@
+anonymization:
+  privacyModels:
+    - name: anonymization_tabular
+      type: tabular
+      modelConfiguration:
+        riskThresholdType: Avg
+        riskThresholdValue: 0.5
+        generalizationSetting: Global
+        suppressionLimit: 0.5
+  attributeConfiguration:
+    - attributeProtection: ATTRIBUTE_DELETION
+      index: 0
+      name: Identifier
+      dataType: INTEGER
+      scale: INTERVAL
+      intervalSize: null
+    - attributeProtection: DATE_GENERALIZATION
+      index: 2
+      name: birthdate
+      dataType: DATE
+      scale: DATE
+      intervalSize: year
+    - attributeProtection: DATE_GENERALIZATION
+      index: 3
+      name: death_date
+      dataType: DATE
+      scale: DATE
+      intervalSize: year
+    - attributeProtection: MICRO_AGGREGATION
+      index: 4
+      name: Age
+      dataType: INTEGER
+      scale: INTERVAL
+      intervalSize: 10
+    - attributeProtection: MICRO_AGGREGATION
+      index: 11
+      name: MaxHR
+      dataType: INTEGER
+      scale: INTERVAL
+      intervalSize: 10
+configurations:
+- index: 0
+  name: "Identifier"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 1
+  name: "name"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+- index: 2
+  name: "birthdate"
+  type: "DATE"
+  scale: "DATE"
+  configurations:
+  - name: "DateFormatConfiguration"
+    dateFormatter: "yyyy-MM-dd"
+- index: 3
+  name: "death_date"
+  type: "DATE"
+  scale: "DATE"
+  configurations:
+  - name: "DateFormatConfiguration"
+    dateFormatter: "yyyy-MM-dd"
+- index: 4
+  name: "Age"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 5
+  name: "Sex"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+- index: 6
+  name: "ChestPainType"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+- index: 7
+  name: "RestingBP"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 8
+  name: "Cholesterol"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 9
+  name: "FastingBS"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 10
+  name: "RestingECG"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+- index: 11
+  name: "MaxHR"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 12
+  name: "ExerciseAngina"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+- index: 13
+  name: "Oldpeak"
+  type: "DECIMAL"
+  scale: "RATIO"
+  configurations: []
+- index: 14
+  name: "ST_Slope"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+- index: 15
+  name: "HeartDisease"
+  type: "STRING"
+  scale: "NOMINAL"
+  configurations: []
+synthetization_configuration:
+  algorithm:
+    synthesizer: arf
+    type: cross-sectional
+    version: "0.1"
+    model_parameter:
+      num_trees: 30
+      delta: 0
+      max_iters: 10
+      min_node_size: 5
+      random_state: 0
+      sampling_patience: 500
+      compress_dataset: false
+      early_stop: true
+    model_fitting:
+      train: 0.8
+    sampling:
+      num_samples: 1000
+evaluation_configuration:
+  data_format: cross-sectional
+  resemblance:
+    mean: {}
+    standard_deviation: {}
+    variance: {}
+    skewness: {}
+    mode: {}
+    distinct_values: {}
+    fifth_percentile: {}
+    median: {}
+    q1: {}
+    q3: {}
+    ninety_fifth_percentile: {}
+    kurtosis: {}
+    minimum: {}
+    maximum: {}
+    density: {}
+    histogram: {}
+    kolmogorov_smirnov: {}
+    hellinger_distance: {}
+    frequency_plot: {}
+    missing_values_count: {}
+    missing_values_percentage: {}
+  utility:
+    machine_learning:
+      train_size: 0.8
+      random_state: 42
+      target_variable: HeartDisease
+    discriminator_based_evaluation:
+      train_size: 0.8
+      random_state: 42
+risk_assessment_configuration:
+  singlingout-uni:
+    n_attacks: 100
+  attribute_inference:
+    n_attacks: 100
+  linkage:
+    n_attacks: 100
+    available_columns:
+      - Identifier
+      - name
+      - birthdate
+      - death_date
+      - Age
+      - Sex
+    unavailable_columns:
+      - ChestPainType
+      - RestingBP
+      - Cholesterol
+      - FastingBS
+      - RestingECG
+      - MaxHR
+      - ExerciseAngina
+      - Oldpeak
+      - ST_Slope
+      - HeartDisease
+  data_format: cross-sectional
+  train_fraction: 0.8
+  targets: []
+  n_random_targets: 5
+  n_outlier_targets: 5
+  n_iterations: 1
+  columns_excluded: []
+  singlingout-multi:
+    n_attacks: 100
+  metrics:
+    uniqueness: true
