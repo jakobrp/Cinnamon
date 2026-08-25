@@ -10,16 +10,16 @@ from requests.auth import HTTPBasicAuth
 CINNAMON_URL = "http://localhost:8080/api"
 
 # Heart
-#DATA_FILE = "./resources/heart.csv"
-#CONFIG_FILE = "./resources/config.yaml"
+DATA_FILE = "./resources/heart.csv"
+CONFIG_FILE = "./resources/config.yaml"
 
 # FHIR bundle
 #DATA_FILE = "./resources/example-bundle.json"
 #CONFIG_FILE = "./resources/config-FHIR-bundle.yaml"
 
 # FHIR Server
-DATA_FILE = None
-CONFIG_FILE = "./resources/config-FHIR-server.yaml"
+#DATA_FILE = None
+#CONFIG_FILE = "./resources/config-FHIR-server.yaml"
 
 NUMBER_PROJECTS = 1
 GAP = 0
@@ -139,7 +139,7 @@ def main():
     for project_index in range(NUMBER_PROJECTS):
         context = CinnamonContext()
         context.email = "project" + str(project_index)
-        context.password = "Project" + str(project_index)
+        context.password = "Project" + str(project_index) +"!Testpass"
 
         thread = threading.Thread(target=workflow, args=(context,))
         threads.append(thread)
