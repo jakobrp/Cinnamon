@@ -1191,95 +1191,21 @@ def send_callback_error(callback_url, session_key, message, status_code):
         print(f"Failed to send error to callback URL: {str(e)}")
 
 
-@app.route("/report", methods=["POST"])
+@app.route('/report', methods=['POST'])
 def report():
-    configuration_raw = request.form.get("configuration", "")
-
-    try:
-        configuration = yaml.safe_load(configuration_raw) or {}
-    except yaml.YAMLError as exc:
-        return jsonify({
-            "error": f"Invalid synthetization configuration: {exc}"
-        }), 400
-
-    synthetization_config = configuration.get(
-        "synthetization_configuration",
-        {},
-    )
-    algorithm_config = synthetization_config.get("algorithm", {})
-
-    synthesizer_name = (
-        algorithm_config.get("synthesizer")
-        or algorithm_config.get("name")
-        or configuration.get("name")
-        or "unknown"
-    )
-
-    synthesizer_metadata = synthesizer_classes.get(
-        synthesizer_name,
-        {},
-    )
-
-    display_name = synthesizer_metadata.get(
-        "display_name",
-        synthesizer_name,
-    )
-    algorithm_description = synthesizer_metadata.get(
-        "description",
-        "No description is available for this synthesizer.",
-    )
-
-    fitting_config = algorithm_config.get("model_fitting", {})
-
-    batch_size = fitting_config.get("batch_size")
-    epochs = fitting_config.get("epochs")
-    epsilon = fitting_config.get("epsilon")
-
-    parameter_parts = []
-
-    if batch_size is not None:
-        parameter_parts.append(
-            f"a batch size of <strong>{batch_size}</strong>"
-        )
-
-    if epochs is not None:
-        parameter_parts.append(
-            f"<strong>{epochs} epochs</strong>"
-        )
-
-    if epsilon is not None:
-        parameter_parts.append(
-            f"a privacy budget of <strong>ε = {epsilon}</strong>"
-        )
-
-    if parameter_parts:
-        parameter_description = (
-            " The configured training parameters were "
-            + ", ".join(parameter_parts)
-            + "."
-        )
-    else:
-        parameter_description = ""
-
-    description = (
-        "<p>"
-        f"The used generative model was "
-        f"<strong>{display_name}</strong>."
-        f"{parameter_description}"
-        "</p>"
-        "<p>"
-        f"<strong>{display_name}</strong>: "
-        f"{algorithm_description}"
-        "</p>"
-        "<p>"
-        "For further details, look into the dedicated "
-        "synthetization section of this report."
-        "</p>"
-    )
-
-    return jsonify({
-        "configDescription": description,
-    })
+    # TODO create text base on the given config
+    configuration = request.form.get('configuration')
+    description = ('<p>'
+                   'The used generative model was <strong>Conditional Tabular GAN (CTGAN)</strong> with a <strong>batch size of 128</strong>.'
+                   'The model was trained with <strong>10 epochs</strong>.'
+                   '</p>'
+                   '<p>'
+                   '<strong>Conditional Tabular GAN (CTGAN)</strong> are a specialized type of generative model designed to create realistic synthetic tabular data, mimicking the statistical properties of original datasets. Leveraging a generator-discriminator framework, CTGANs learn the relationships within your data and generate new rows conditioned on specified parameters, enabling the creation of synthetic datasets that preserve privacy while retaining key analytical insights. This approach is particularly valuable for scenarios requiring data augmentation or secure model development.'
+                   '</p>'
+                   '<p>'
+                   'For further details, look into the dedicated synthetization section of this report.'
+                   '</p>')
+    return jsonify({'configDescription': description})
 
 
 @app.route('/actuator/health', methods=['GET'])
