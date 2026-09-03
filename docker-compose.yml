@@ -71,12 +71,12 @@ services:
             - cinnamon-db
         healthcheck:
             test: "curl --fail --silent localhost:8080/actuator/health | grep UP || exit 1"
-            interval: 30s
-            timeout: 3s
-            retries: 3
+            interval: 60s
+            timeout: 30s
+            retries: 10
             start_period: 20s
     cinnamon-synthetization:
-        image: ghcr.io/ki-aim/cinnamon-synthetization:latest
+        build: ./cinnamon-synthetization
         container_name: cinnamon-synthetization
         restart: unless-stopped
         ports:
@@ -109,7 +109,7 @@ services:
         networks:
             - evaluation-network
     cinnamon-risk-assessment:
-        image: ghcr.io/ki-aim/cinnamon-risk-assessment:latest
+        build: ./cinnamon-risk-assessment
         container_name: cinnamon-risk-assessment
         restart: unless-stopped
         ports:
