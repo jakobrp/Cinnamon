@@ -42,6 +42,7 @@ class PateganSynthesizer(TabularDataSynthesizer):
             "generator_n_units_hidden": hidden_units,
             "discriminator_n_layers_hidden": hidden_layers,
             "discriminator_n_units_hidden": hidden_units,
+            "generator_n_iter": 10,
             "lr": float(2e-4),
             "weight_decay": float(1e-6),
             "batch_size": batch_size,
@@ -56,6 +57,8 @@ class PateganSynthesizer(TabularDataSynthesizer):
             "teacher_template": "xgboost",
             "lamda": float(training_params["lamda"]),
             "alpha": int(training_params["alpha"]),
+
+
         }
         self._sampling = config["synthetization_configuration"]["algorithm"]["sampling"]
 

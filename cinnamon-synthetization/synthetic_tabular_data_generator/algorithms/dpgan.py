@@ -51,6 +51,7 @@ class DpganSynthesizer(TabularDataSynthesizer):
             "sampling_patience": 500,
             # PRIVACY
             "epsilon": epsilon,
+            "delta": float(training_params["delta"])
         }
         self._sampling = config["synthetization_configuration"]["algorithm"]["sampling"]
 
