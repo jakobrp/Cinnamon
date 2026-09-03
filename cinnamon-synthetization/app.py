@@ -33,7 +33,7 @@ CORS(app)
 
 PROCESS_CONTEXT = get_context("spawn")
 
-CALLBACK_TIMEOUT_SECONDS = 30.0
+CALLBACK_TIMEOUT_SECONDS = 300.0
 ERROR_CALLBACK_TIMEOUT_SECONDS = 5.0
 SYNTHESIZER_CONFIG_DIR = os.path.join(
     os.path.dirname(__file__),
