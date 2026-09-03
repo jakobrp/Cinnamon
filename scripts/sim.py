@@ -140,8 +140,8 @@ def single_execution(profile: Profile):
     for project_index in range(NUMBER_PROJECTS):
         context = CinnamonContext()
         context.url = profile.cinnamon_url
-        context.email = "project" + str(project_index)
-        context.password = "Project" + str(project_index)
+        context.email = "experiment" + str(project_index)
+        context.password = "Experiment" + str(project_index) + "!2026"
         context.config_file = profile.config_file
         context.data_file = profile.data_file
         context.result_directory = profile.result_directory
