@@ -52,7 +52,7 @@ class PateganSynthesizer(TabularDataSynthesizer):
             "sampling_patience": 500,
             # Privacy
             "epsilon": epsilon,
-            "delta": float(training_params["delta"]),
+
             "n_teachers": int(training_params["n_teachers"]),
             "teacher_template": "xgboost",
             "lamda": float(training_params["lamda"]),
