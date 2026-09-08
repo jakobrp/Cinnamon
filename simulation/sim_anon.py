@@ -187,7 +187,7 @@ def get_process_status(context: CinnamonContext, stage_name: str):
             last_error = exc
             print_info(
                 context,
-                f"Status-Abfrage fehlgeschlagen (Versuch {attempt + 1}/5), neuer Versuch in 5s...",
+                f"Status-Abfrage fehlgeschlagen (Versuch {attempt + 1}/30), neuer Versuch in 10s...",
             )
             time.sleep(10)
     raise RuntimeError(f"get process status failed after retries: {last_error}")
@@ -384,6 +384,8 @@ def main():
 
     print(f"[sim_anon] Synthesizer: {synth_algo} | Ausgabe: {synth_dir}")
 
+    succeeded = 0
+    failed_runs = []
     for run_index in range(args.runs):
         run_suffix = f"run{run_index + 1:02d}"
         run_timestamp = f"{time.strftime('%Y%m%d_%H%M%S')}_{run_suffix}"
@@ -392,66 +394,80 @@ def main():
         context = CinnamonContext(email=email, password=password)
 
         print_info(context, f"Starting run {run_index + 1}/{args.runs}")
-        if not login(context):
-            if not register_user(context):
-                raise RuntimeError("Registration failed. Provide --email/--password for an existing user.")
-            if not login(context):
-                raise RuntimeError("Login failed after registration.")
-
+        # Ein fehlgeschlagener Run bricht NICHT den ganzen Durchlauf ab,
+        # sondern wird uebersprungen; am Ende werden die fehlenden gelistet.
         try:
-            create_project(context)
-            post_data(context, data_file)
-            post_data_config(context, data_config)
-            if args.holdout and args.holdout > 0:
-                post_hold_out(context, args.holdout)
-            post_confirm_data(context)
+            if not login(context):
+                if not register_user(context):
+                    raise RuntimeError("Registration failed. Provide --email/--password for an existing user.")
+                if not login(context):
+                    raise RuntimeError("Login failed after registration.")
 
-            post_config(context, "anonymization", anonymization_config, "/api/anonymization/")
-            post_config(
-                context, "synthetization_configuration", synthetization_config, synth_algo_url
-            )
-            post_config(context, "evaluation_configuration", evaluation_config, "/start_evaluation")
-            post_config(context, "risk_assessment_configuration", risk_config, "/start_evaluation")
+            try:
+                create_project(context)
+                post_data(context, data_file)
+                post_data_config(context, data_config)
+                if args.holdout and args.holdout > 0:
+                    post_hold_out(context, args.holdout)
+                post_confirm_data(context)
 
-            # Nur Synthese auf Rohdaten: Anonymisierung aktiv überspringen,
-            # keine separate real_risk-Phase. execution (= Synthese) laeuft vor evaluation.
-            print_info(context, "Synthese auf Rohdaten + Evaluation")
-            post_configure(context, "anonymization", skip=True)
-            post_configure(context, "synthetization", skip=False)
-            post_configure(context, "technical_evaluation", skip=False)
-            post_configure(context, "risk_evaluation")
-            post_configure(context, "risk_evaluation_o", skip=True)
-            # risk_evaluation_o laeuft automatisch als Teil der evaluation-Stufe mit.
+                post_config(context, "anonymization", anonymization_config, "/api/anonymization/")
+                post_config(
+                    context, "synthetization_configuration", synthetization_config, synth_algo_url
+                )
+                post_config(context, "evaluation_configuration", evaluation_config, "/start_evaluation")
+                post_config(context, "risk_assessment_configuration", risk_config, "/start_evaluation")
 
-            run_stage(context, "execution")
-            time.sleep(10)
-            run_stage(context, "evaluation")
+                # Nur Synthese auf Rohdaten: Anonymisierung aktiv überspringen,
+                # keine separate real_risk-Phase. execution (= Synthese) laeuft vor evaluation.
+                print_info(context, "Synthese auf Rohdaten + Evaluation")
+                post_configure(context, "anonymization", skip=True)
+                post_configure(context, "synthetization", skip=False)
+                post_configure(context, "technical_evaluation", skip=False)
+                post_configure(context, "risk_evaluation")
+                post_configure(context, "risk_evaluation_o", skip=True)
+                # risk_evaluation_o laeuft automatisch als Teil der evaluation-Stufe mit.
 
-            synth_zip = get_results_zip(
-                context, ["pipeline.execution.synthetization.dataset"], "synthetization"
-            )
-            save_anonymized_datasets(synth_zip, synth_dir / "files", run_timestamp)
+                run_stage(context, "execution")
+                time.sleep(10)
+                run_stage(context, "evaluation")
 
-            tech_zip = get_results_zip(
+                synth_zip = get_results_zip(
+                    context, ["pipeline.execution.synthetization.dataset"], "synthetization"
+                )
+                save_anonymized_datasets(synth_zip, synth_dir / "files", run_timestamp)
+
+                tech_zip = get_results_zip(
+                    context,
+                    ["pipeline.evaluation.technical_evaluation.other"],
+                    "technical evaluation",
+                )
+                save_result_files(tech_zip, synth_dir / "tech_eval", run_timestamp, "technical evaluation")
+
+                risk_zip = get_results_zip(
+                    context, ["pipeline.evaluation.risk_evaluation.other"], "risk evaluation"
+                )
+                save_result_files(risk_zip, synth_dir / "risk_eval", run_timestamp, "risk evaluation")
+
+                print_info(context, f"Saved synthesis results to {synth_dir}")
+                succeeded += 1
+            finally:
+                if not args.keep_user:
+                    delete_user(context)
+        except Exception as exc:
+            failed_runs.append(run_index + 1)
+            print_info(
                 context,
-                ["pipeline.evaluation.technical_evaluation.other"],
-                "technical evaluation",
+                f"Run {run_index + 1}/{args.runs} FEHLGESCHLAGEN, wird uebersprungen: {exc}",
             )
-            save_result_files(tech_zip, synth_dir / "tech_eval", run_timestamp, "technical evaluation")
-
-            risk_zip = get_results_zip(
-                context, ["pipeline.evaluation.risk_evaluation.other"], "risk evaluation"
-            )
-            save_result_files(risk_zip, synth_dir / "risk_eval", run_timestamp, "risk evaluation")
-
-            print_info(context, f"Saved synthesis results to {synth_dir}")
-        finally:
-            if not args.keep_user:
-                delete_user(context)
 
         # Der Plattform Zeit zum Aufräumen zwischen Runs geben.
         if run_index < args.runs - 1:
             time.sleep(10)
+
+    print(f"[sim_anon] Fertig: {succeeded}/{args.runs} Runs erfolgreich gespeichert.")
+    if failed_runs:
+        print(f"[sim_anon] Fehlgeschlagene Runs (bitte nachlaufen lassen): {failed_runs}")
 
 
 if __name__ == "__main__":
