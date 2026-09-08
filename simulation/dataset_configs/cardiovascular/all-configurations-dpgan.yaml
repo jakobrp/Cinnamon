@@ -1,0 +1,158 @@
+
+configurations:
+- index: 0
+  name: "age"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 1
+  name: "gender"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 2
+  name: "height"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 3
+  name: "weight"
+  type: "DECIMAL"
+  scale: "RATIO"
+  configurations: []
+- index: 4
+  name: "ap_hi"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 5
+  name: "ap_lo"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 6
+  name: "cholesterol"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 7
+  name: "gluc"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
+- index: 8
+  name: "smoke"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
+  configurations: []
+- index: 9
+  name: "alco"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
+  configurations: []
+- index: 10
+  name: "active"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
+  configurations: []
+- index: 11
+  name: "cardio"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
+  configurations: []
+anonymization:
+  algorithm:
+    id: "anonymization_tabular"
+    version: "1.0"
+  privacyModels:
+  - name: "anonymization_tabular"
+    type: "tabular"
+    version: "1.0"
+    modelConfiguration:
+      riskThresholdType: "Max"
+      riskThresholdValue: 0.1
+      generalizationSetting: "Global"
+      suppressionLimit: 0
+  attributeConfiguration: []
+synthetization_configuration:
+  algorithm:
+    id: "dpgan"
+    version: "0.1"
+    synthesizer: dpgan
+    model_parameter:
+      number_of_layers: 2
+      number_of_units_in_layers: 256
+    model_fitting:
+      batch_size: 256
+      epochs: 50
+      epsilon: 5
+      delta: 1.0E-5
+    sampling:
+      num_samples: 70000
+    type: "cross-sectional"
+evaluation_configuration:
+  algorithm:
+    id: "evaluation"
+    version: "0.1"
+  data_format: "cross-sectional"
+  resemblance:
+    mean: {}
+    standard_deviation: {}
+    variance: {}
+    distinct_values: {}
+    mode: {}
+    fifth_percentile: {}
+    median: {}
+    q1: {}
+    q3: {}
+    ninety_fifth_percentile: {}
+    minimum: {}
+    maximum: {}
+    density: {}
+    histogram: {}
+    kolmogorov_smirnov: {}
+    hellinger_distance: {}
+    frequency_plot: {}
+    calculate_columnwise_correlations: {}
+    calculate_columnwise_correlations_distance: {}
+    missing_values_count: {}
+    visualize_columnwise_correlations: {}
+  utility:
+    machine_learning:
+      train_size: 0.8
+      target_variable: "cardio"
+risk_assessment_configuration:
+  algorithm:
+    id: "risk_assessment"
+    version: "0.1"
+  attribute_inference:
+    n_attacks: 100
+  data_format: "cross-sectional"
+  singlingout_multi:
+    n_attacks: 100
+  n_outlier_targets: 1
+  columns_excluded: []
+  linkage:
+    n_attacks: 100
+    available_columns:
+    - "ap_hi"
+    - "ap_lo"
+    - "cholesterol"
+    - "gluc"
+    - "active"
+    - "alco"
+    unavailable_columns:
+    - "age"
+    - "gender"
+    - "height"
+    - "weight"
+    - "smoke"
+    - "cardio"
+  n_iterations: 1
+  metrics:
+    uniqueness: true
+  targets: []
+  singlingout_uni:
+    n_attacks: 300
+  train_fraction: 0.8
+  n_random_targets: 5

@@ -1,98 +1,59 @@
-project:
-  projectName: "dpgan_heart_config"
-  contactMail: null
-  contactUrl: null
-  reportCreator: null
-  metricConfiguration: null
-dataSource:
-  dataSourceType: "LOCAL"
-  fileType: "CSV"
-  csvFileConfiguration:
-    columnSeparator: ","
-    lineSeparator: "\n"
-    quoteChar: "\""
-    hasHeader: true
-dataset:
-  createHoldOutSplit: true
-  holdOutSplitPercentage: 0.2
-pipeline:
-  pipelines:
-  - jobs:
-    - name: "anonymization"
-      enabled: false
-      configuration: 0
-    - name: "synthetization"
-      enabled: true
-      configuration: 0
-    - name: "technical_evaluation"
-      enabled: true
-      configuration: 0
-    - name: "risk_evaluation"
-      enabled: true
-      configuration: 0
-    - name: "risk_evaluation_o"
-      enabled: true
-      configuration: 0
+
 configurations:
 - index: 0
-  name: "Age"
-  type: "INTEGER"
-  scale: "INTERVAL"
-  configurations: []
-- index: 1
-  name: "Sex"
+  name: "gender"
   type: "STRING"
   scale: "NOMINAL"
   configurations: []
+- index: 1
+  name: "age"
+  type: "INTEGER"
+  scale: "INTERVAL"
+  configurations: []
 - index: 2
-  name: "ChestPainType"
-  type: "STRING"
+  name: "hypertension"
+  type: "BOOLEAN"
   scale: "NOMINAL"
   configurations: []
 - index: 3
-  name: "RestingBP"
-  type: "INTEGER"
-  scale: "INTERVAL"
+  name: "heart_disease"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
   configurations: []
 - index: 4
-  name: "Cholesterol"
-  type: "INTEGER"
-  scale: "INTERVAL"
+  name: "ever_married"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
   configurations: []
 - index: 5
-  name: "FastingBS"
-  type: "INTEGER"
-  scale: "INTERVAL"
+  name: "work_type"
+  type: "STRING"
+  scale: "NOMINAL"
   configurations: []
 - index: 6
-  name: "RestingECG"
+  name: "Residence_type"
   type: "STRING"
   scale: "NOMINAL"
   configurations: []
 - index: 7
-  name: "MaxHR"
-  type: "INTEGER"
-  scale: "INTERVAL"
-  configurations: []
-- index: 8
-  name: "ExerciseAngina"
-  type: "STRING"
-  scale: "NOMINAL"
-  configurations: []
-- index: 9
-  name: "Oldpeak"
+  name: "avg_glucose_level"
   type: "DECIMAL"
   scale: "RATIO"
   configurations: []
-- index: 10
-  name: "ST_Slope"
+- index: 8
+  name: "bmi"
+  type: "DECIMAL"
+  scale: "RATIO"
+  configurations: []
+- index: 9
+  name: "smoking_status"
   type: "STRING"
   scale: "NOMINAL"
   configurations: []
-- index: 11
-  name: "HeartDisease"
-  type: "INTEGER"
-  scale: "INTERVAL"
+- index: 10
+  name: "stroke"
+  type: "BOOLEAN"
+  scale: "NOMINAL"
   configurations: []
 anonymization:
   algorithm:
@@ -112,17 +73,17 @@ synthetization_configuration:
   algorithm:
     id: "dpgan"
     version: "0.1"
-    synthesizer: "dpgan"
+    synthesizer: dpgan
     model_parameter:
       number_of_layers: 2
       number_of_units_in_layers: 256
     model_fitting:
       batch_size: 128
-      epochs: 5
-      epsilon: 1
+      epochs: 315
+      epsilon: 5
       delta: 1.0E-5
     sampling:
-      num_samples: 918
+      num_samples: 5110
     type: "cross-sectional"
 evaluation_configuration:
   algorithm:
@@ -154,7 +115,7 @@ evaluation_configuration:
   utility:
     machine_learning:
       train_size: 0.8
-      target_variable: "HeartDisease"
+      target_variable: "stroke"
 risk_assessment_configuration:
   algorithm:
     id: "risk_assessment"
@@ -169,24 +130,23 @@ risk_assessment_configuration:
   linkage:
     n_attacks: 100
     available_columns:
-    - "ChestPainType"
-    - "RestingBP"
-    - "Cholesterol"
-    - "RestingECG"
-    - "MaxHR"
-    - "ExerciseAngina"
-    - "Oldpeak"
-    - "ST_Slope"
+    - "hypertension"
+    - "ever_married"
+    - "work_type"
+    - "avg_glucose_level"
+    - "Residence_type"
+    - "smoking_status"
     unavailable_columns:
-    - "Age"
-    - "Sex"
-    - "FastingBS"
-    - "HeartDisease"
+    - "gender"
+    - "age"
+    - "heart_disease"
+    - "bmi"
+    - "stroke"
   n_iterations: 1
   metrics:
     uniqueness: true
   targets: []
   singlingout_uni:
-    n_attacks: 100
+    n_attacks: 300
   train_fraction: 0.8
   n_random_targets: 5

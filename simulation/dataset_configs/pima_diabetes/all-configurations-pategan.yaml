@@ -1,3 +1,4 @@
+
 configurations:
 - index: 0
   name: "Pregnancies"
@@ -45,47 +46,43 @@ configurations:
   scale: "NOMINAL"
   configurations: []
 anonymization:
+  algorithm:
+    id: "anonymization_tabular"
+    version: "1.0"
   privacyModels:
-    - name: anonymization_tabular
-      type: tabular
-      modelConfiguration:
-        riskThresholdType: Max
-        riskThresholdValue: 0.5
-        generalizationSetting: Global
-        suppressionLimit: 0.8
-  attributeConfiguration:
-    - attributeProtection: MICRO_AGGREGATION
-      dataType: INTEGER
-      index: 0
-      intervalSize: 10
-      name: Pregnancies
-      scale: INTERVAL
-    - attributeProtection: MICRO_AGGREGATION
-      dataType: DECIMAL
-      index: 5
-      intervalSize: 1
-      name: BMI
-      scale: RATIO
-    - attributeProtection: MICRO_AGGREGATION
-      dataType: INTEGER
-      index: 7
-      intervalSize: 10
-      name: Age
-      scale: INTERVAL
+  - name: "anonymization_tabular"
+    type: "tabular"
+    version: "1.0"
+    modelConfiguration:
+      riskThresholdType: "Max"
+      riskThresholdValue: 0.1
+      generalizationSetting: "Global"
+      suppressionLimit: 0
+  attributeConfiguration: []
 synthetization_configuration:
   algorithm:
-    synthesizer: bayesian_network
-    type: cross-sectional
+    id: "pategan"
     version: "0.1"
+    synthesizer: pategan
     model_parameter:
-      encoder_max_clusters: 10
-      encoder_noise_scale: 0.01
+      number_of_layers: 2
+      number_of_units_in_layers: 256
     model_fitting:
-      struct_learning_n_iter: 50
+      batch_size: 32
+      epochs: 200
+      epsilon: 5
+      delta: 1.0E-5
+      n_teachers: 5
+      lamda: 0.001
+      alpha: 100
     sampling:
       num_samples: 768
+    type: "cross-sectional"
 evaluation_configuration:
-  data_format: cross-sectional
+  algorithm:
+    id: "evaluation"
+    version: "0.1"
+  data_format: "cross-sectional"
   resemblance:
     mean: {}
     standard_deviation: {}
@@ -111,35 +108,36 @@ evaluation_configuration:
   utility:
     machine_learning:
       train_size: 0.8
-      target_variable: Outcome
-    discriminator_based_evaluation:
-      train_size: 0.8
+      target_variable: "Outcome"
 risk_assessment_configuration:
-  singlingout_uni:
-    n_attacks: 100
+  algorithm:
+    id: "risk_assessment"
+    version: "0.1"
   attribute_inference:
     n_attacks: 100
+  data_format: "cross-sectional"
+  singlingout_multi:
+    n_attacks: 100
+  n_outlier_targets: 5
+  columns_excluded: []
   linkage:
     n_attacks: 100
     available_columns:
-      - Glucose
-      - BloodPressure
-      - SkinThickness
-      - DiabetesPedigreeFunction
-      - Insulin
+    - "Glucose"
+    - "BloodPressure"
+    - "SkinThickness"
+    - "DiabetesPedigreeFunction"
+    - "Insulin"
     unavailable_columns:
-      - Pregnancies
-      - BMI
-      - Age
-      - Outcome
-  data_format: cross-sectional
-  train_fraction: 0.8
-  targets: []
-  n_random_targets: 5
-  n_outlier_targets: 5
+    - "Pregnancies"
+    - "BMI"
+    - "Age"
+    - "Outcome"
   n_iterations: 1
-  columns_excluded: []
-  singlingout_multi:
-    n_attacks: 100
   metrics:
     uniqueness: true
+  targets: []
+  singlingout_uni:
+    n_attacks: 100
+  train_fraction: 0.8
+  n_random_targets: 5
