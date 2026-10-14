@@ -10,8 +10,6 @@ import de.kiaim.cinnamon.platform.model.dto.DataConfigurationEstimation;
 import de.kiaim.cinnamon.platform.model.dto.FileConfigurationEstimation;
 import de.kiaim.cinnamon.platform.model.entity.CsvFileConfigurationEntity;
 import de.kiaim.cinnamon.platform.model.entity.FileConfigurationEntity;
-import de.kiaim.cinnamon.platform.model.entity.FileCompatibilityEntity;
-import de.kiaim.cinnamon.platform.model.entity.LobWrapperEntity;
 import de.kiaim.cinnamon.platform.model.enumeration.CsvDelimiter;
 import de.kiaim.cinnamon.platform.model.enumeration.CsvQuote;
 import de.kiaim.cinnamon.platform.model.enumeration.CsvRecordSeparator;
@@ -48,11 +46,6 @@ public class CsvProcessor extends CommonDataProcessor implements DataProcessor {
 		return FileType.CSV;
 	}
 
-	@Override
-	public void checkFileCompatibility(final LobWrapperEntity data, final FileCompatibilityEntity fileCompatibility) {
-		fileCompatibility.getCompatibleFileTypes().add(FileType.CSV);
-	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -60,10 +53,16 @@ public class CsvProcessor extends CommonDataProcessor implements DataProcessor {
 	 * If the data does not contain a quote char, a double quote is used as default.
 	 */
 	@Override
-	public FileConfigurationEstimation estimateFileConfiguration(final LobWrapperEntity data,
-																 final FileCompatibilityEntity fileCompatibility)
-			throws InternalIOException {
-		final var csvFileConfiguration = estimateCsvFileConfiguration(data.getLobString());
+	public FileConfigurationEstimation estimateFileConfiguration(final InputStream data) throws InternalIOException {
+		final byte[] bytes;
+		try {
+			bytes = data.readAllBytes();
+		} catch (final IOException e) {
+			throw new InternalIOException(InternalIOException.FILE_READING,
+			                              "Failed to read the file while estimating the CSV file configuration", e);
+		}
+
+		final var csvFileConfiguration = estimateCsvFileConfiguration(new String(bytes));
 		final var fileConfiguration =  new FileConfiguration();
 
 		fileConfiguration.setFileType(FileType.CSV);
@@ -215,7 +214,7 @@ public class CsvProcessor extends CommonDataProcessor implements DataProcessor {
 
 		final Iterable<CSVRecord> records;
 		try {
-			records = csvFormat.parse(new InputStreamReader(data, StandardCharsets.UTF_8));
+			records = csvFormat.parse(new InputStreamReader(data));
 		} catch (IOException e) {
 			throw new InternalIOException(InternalIOException.CSV_READING, "Failed to parse CSV file", e);
 		}

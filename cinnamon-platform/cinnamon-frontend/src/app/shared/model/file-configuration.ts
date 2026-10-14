@@ -1,18 +1,6 @@
 import { CsvFileConfiguration } from "./csv-file-configuration";
 import { XlsxFileConfiguration } from "./xlsx-file-configuration";
 
-export enum DataSourceType {
-    LOCAL = "LOCAL",
-    FHIR_SERVER = "FHIR_SERVER",
-}
-
-export class DataSourceConfiguration {
-    constructor(
-        public dataSourceType: DataSourceType,
-        public server: DataSourceServerConfiguration | null,
-    ) {}
-}
-
 export enum FileType {
 	CSV = "CSV",
     FHIR = "FHIR",
@@ -22,9 +10,9 @@ export enum FileType {
 export class FileConfiguration {
     constructor(
         public fileType: FileType | null,
-        public csvFileConfiguration: CsvFileConfiguration | null,
-        public xlsxFileConfiguration: XlsxFileConfiguration | null,
-        public fhirFileConfiguration: FhirFileConfiguration | null,
+        public csvFileConfiguration: CsvFileConfiguration,
+        public xlsxFileConfiguration: XlsxFileConfiguration,
+        public fhirFileConfiguration: FhirFileConfiguration,
     ) {}
 }
 
@@ -49,11 +37,10 @@ export class FileConfigurationEstimation {
      * The estimated file configuration.
      */
     estimation: FileConfiguration;
-}
 
-export class DataSourceServerConfiguration {
-    constructor(
-        public url: string,
-    ) {
-    }
+    /**
+     * If the estimated file type is FHIR, contains all resource types in the given FHIR bundle.
+     * Otherwise, the value is null.
+     */
+    fhirResourceTypes: string[] | null;
 }

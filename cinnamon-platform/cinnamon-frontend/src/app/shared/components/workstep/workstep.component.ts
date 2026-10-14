@@ -10,7 +10,6 @@ import { WorkstepService } from "../../services/workstep.service";
 })
 export class WorkstepComponent {
     @Input() public stepIndex!: number;
-    @Input() public loading: boolean = false;
     @Input() public locked!: boolean;
     @Input() public valid: boolean = true;
 

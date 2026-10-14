@@ -13,9 +13,6 @@ import lombok.Getter;
 import org.springframework.lang.Nullable;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -81,7 +78,7 @@ public class DateTimeData extends Data {
 			processConfigurations(configuration);
 
 			try {
-				this.value = parseAndNormalize(value, formatter, ZoneOffset.UTC);
+				this.value = LocalDateTime.parse(value, formatter);
 			} catch(Exception e) {
 				throw new DateTimeFormatException();
 			}
@@ -173,33 +170,5 @@ public class DateTimeData extends Data {
 		public DateTimeFormatter buildFormatter(final String format) {
 			return DateTimeFormatter.ofPattern(format);
 		}
-
-		/**
-		 * Parse the given value and normalize it to the given normalization zone.
-		 *
-		 * @param value             The value to parse.
-		 * @param formatter         The formatter to use.
-		 * @param normalizationZone The normalization zone.
-		 * @return The normalized local date-time.
-		 */
-		private LocalDateTime parseAndNormalize(final String value, final DateTimeFormatter formatter,
-												final ZoneId normalizationZone) {
-			try {
-				// 1. Try parsing as ZonedDateTime (handles offsets like +02:00, Z, and named zones)
-				final ZonedDateTime zdt = ZonedDateTime.parse(value, formatter);
-				return zdt.withZoneSameInstant(normalizationZone).toLocalDateTime();
-			} catch (final DateTimeParseException e) {
-				try {
-					// 2. Fallback: Parse as LocalDateTime (no timezone in format/string)
-					return LocalDateTime.parse(value, formatter);
-					// If no timezone is present, this keeps the original local time.
-					// If missing TZ = normalizationZone, use:
-//					return LocalDateTime.parse(value, formatter).atZone(normalizationZone).toLocalDateTime();
-				} catch (final DateTimeParseException e2) {
-					throw new IllegalArgumentException("Failed to parse date-time: " + value, e2);
-				}
-			}
-		}
-
 	}
 }

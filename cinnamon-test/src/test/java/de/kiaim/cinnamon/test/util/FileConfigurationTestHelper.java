@@ -1,7 +1,5 @@
 package de.kiaim.cinnamon.test.util;
 
-import de.kiaim.cinnamon.model.configuration.data.DataSourceConfiguration;
-import de.kiaim.cinnamon.model.configuration.data.DataSourceServerConfiguration;
 import de.kiaim.cinnamon.model.configuration.data.file.*;
 import de.kiaim.cinnamon.model.enumeration.DataSourceType;
 import de.kiaim.cinnamon.platform.model.entity.CsvFileConfigurationEntity;
@@ -10,19 +8,6 @@ import de.kiaim.cinnamon.platform.model.entity.FileConfigurationEntity;
 import de.kiaim.cinnamon.platform.model.entity.XlsxFileConfigurationEntity;
 
 public class FileConfigurationTestHelper {
-	public static DataSourceConfiguration generateDataSourceConfiguration() {
-		return new DataSourceConfiguration(DataSourceType.LOCAL, null);
-	}
-
-	public static DataSourceConfiguration generateDataSourceConfiguration(DataSourceType dataSourceType) {
-		return switch (dataSourceType) {
-			case LOCAL -> new DataSourceConfiguration(DataSourceType.LOCAL, null);
-			case FHIR_SERVER -> new DataSourceConfiguration(DataSourceType.FHIR_SERVER,
-			                                                new DataSourceServerConfiguration(
-					                                                "https://example.com/fhir"));
-		};
-	}
-
 	public static FileConfiguration generateFileConfiguration() {
 		return generateFileConfiguration(true);
 	}
@@ -37,6 +22,8 @@ public class FileConfigurationTestHelper {
 
 	public static FileConfiguration generateFileConfiguration(final boolean hasHeader, final FileType fileType) {
 		return new FileConfiguration(
+				DataSourceType.LOCAL,
+				null,
 				fileType,
 				new CsvFileConfiguration(",", "\n", '"', hasHeader),
 				new XlsxFileConfiguration(hasHeader),
@@ -54,16 +41,10 @@ public class FileConfigurationTestHelper {
 		};
 	}
 
-	public static String generateDataSourceConfigurationAsYaml() {
+	public static String generateFileConfigurationAsYaml() {
 		return """
 		       dataSource:
 		         dataSourceType: "LOCAL"
-		       """;
-	}
-
-	public static String generateFileConfigurationAsYaml() {
-		return """
-		       file:
 		         fileType: "CSV"
 		         csvFileConfiguration:
 		           columnSeparator: ","

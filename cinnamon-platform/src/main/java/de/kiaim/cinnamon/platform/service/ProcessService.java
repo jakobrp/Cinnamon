@@ -39,7 +39,6 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.lang.Nullable;
@@ -80,7 +79,7 @@ public class ProcessService {
 	 * Delay between responding to a finish callback and starting the next process.
 	 * Value is in seconds.
 	 */
-	private static final long DELAY_START_NEXT = 30;
+	private static final long DELAY_START_NEXT = 1;
 
 	private final boolean sslEnabled;
 	private final int port;
@@ -1286,13 +1285,12 @@ public class ProcessService {
 			throws InternalIOException {
 		try {
 			final String dataSetString = JsonMapper.jsonMapper().writeValueAsString(dataSet);
-			bodyBuilder.part(stepInputConfiguration.getPartName(),
-			                 new ByteArrayResource(dataSetString.getBytes(StandardCharsets.UTF_8)) {
+			bodyBuilder.part(stepInputConfiguration.getPartName(), new ByteArrayResource(dataSetString.getBytes()) {
 				@Override
 				public String getFilename() {
 					return stepInputConfiguration.getFileName();
 				}
-			}).contentType(MediaType.APPLICATION_JSON);
+			});
 		} catch (final JsonProcessingException e) {
 			throw new InternalIOException(InternalIOException.DATA_SET_SERIALIZATION,
 			                              "Could not convert dataset to json!", e);

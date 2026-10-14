@@ -10,9 +10,7 @@ import de.kiaim.cinnamon.model.enumeration.DataType;
 import de.kiaim.cinnamon.platform.PlatformApplication;
 import de.kiaim.cinnamon.platform.model.TransformationResult;
 import de.kiaim.cinnamon.platform.model.dto.DataConfigurationEstimation;
-import de.kiaim.cinnamon.platform.model.entity.FileCompatibilityEntity;
 import de.kiaim.cinnamon.platform.model.entity.FileConfigurationEntity;
-import de.kiaim.cinnamon.platform.model.entity.LobWrapperEntity;
 import de.kiaim.cinnamon.platform.model.enumeration.DatatypeEstimationAlgorithm;
 import de.kiaim.cinnamon.model.configuration.data.file.FileType;
 import de.kiaim.cinnamon.platform.processor.XlsxProcessor;
@@ -46,13 +44,10 @@ public class XLSXProcessingTests {
     XlsxProcessor xlsxProcessor;
 
 	@Test
-	void estimateFileConfigurationHasHeaderNot() throws IOException {
+	void estimateFileConfigurationHasHeaderNot() throws FileNotFoundException {
 		InputStream stream = new FileInputStream("src/test/resources/xlsx_test.xlsx");
-        var lobWrapper = new LobWrapperEntity(stream.readAllBytes());
-        var fileCompatibility = getFileCompatibility();
 
-        var estimation = assertDoesNotThrow(
-                () -> xlsxProcessor.estimateFileConfiguration(lobWrapper, fileCompatibility));
+		var estimation = assertDoesNotThrow(() -> xlsxProcessor.estimateFileConfiguration(stream));
 
 		assertEquals(FileType.XLSX, estimation.getEstimation().getFileType());
 		var xlsxConfig = estimation.getEstimation().getXlsxFileConfiguration();
@@ -61,13 +56,10 @@ public class XLSXProcessingTests {
 	}
 
 	@Test
-	void estimateFileConfigurationHasHeaderByAttributeNames() throws IOException {
+	void estimateFileConfigurationHasHeaderByAttributeNames() throws FileNotFoundException {
 		InputStream stream = new FileInputStream("src/test/resources/xlsx_test_with_header.xlsx");
-        var lobWrapper = new LobWrapperEntity(stream.readAllBytes());
-        var fileCompatibility = getFileCompatibility();
 
-        var estimation = assertDoesNotThrow(
-                () -> xlsxProcessor.estimateFileConfiguration(lobWrapper, fileCompatibility));
+		var estimation = assertDoesNotThrow(() -> xlsxProcessor.estimateFileConfiguration(stream));
 
 		assertEquals(FileType.XLSX, estimation.getEstimation().getFileType());
 		var xlsxConfig = estimation.getEstimation().getXlsxFileConfiguration();
@@ -282,12 +274,6 @@ public class XLSXProcessingTests {
         } catch (IOException e) {
             fail(e);
         }
-    }
-
-    private static FileCompatibilityEntity getFileCompatibility() {
-        FileCompatibilityEntity compatibility = new FileCompatibilityEntity();
-        compatibility.getCompatibleFileTypes().add(FileType.XLSX);
-        return compatibility;
     }
 
     private static DataConfiguration getDataConfiguration() {
