@@ -5,7 +5,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy the requirements file into the working directory
-COPY requirements.txt ./
+COPY requirements.txt requirements.lock.txt ./
 
 # Install system dependencies for packages that need compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt -c requirements.lock.txt
 
 # Copy the rest of the application code
 COPY . .
