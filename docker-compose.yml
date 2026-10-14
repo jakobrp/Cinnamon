@@ -21,7 +21,7 @@ services:
 #        volumes:
 #            - ./volumes/cinnamon-db/data:/var/lib/postgresql/data
     cinnamon-platform:
-        image: ghcr.io/ki-aim/cinnamon-platform:latest
+        image: ghcr.io/ki-aim/cinnamon-platform@sha256:e6e01bd42445665bf6ae6517093648c465e0a7f27dcd49aeac7767fe9d761042  # Stand 7a69ae8c (17.06.2026)
         container_name: cinnamon-platform
         restart: unless-stopped
         ports:
@@ -101,7 +101,7 @@ services:
         volumes:
              - ./cinnamon-synthetization:/app
     cinnamon-evaluation:
-        image: ghcr.io/ki-aim/cinnamon-evaluation:latest
+        image: ghcr.io/ki-aim/cinnamon-evaluation@sha256:a7f786db35b45a3fc0b9d869b56ddd46e47210133d35aa201a421d8a95f577aa  # Stand 7a69ae8c (17.06.2026)
         container_name: cinnamon-evaluation
         restart: unless-stopped
         ports:
@@ -120,7 +120,7 @@ services:
         volumes:
             - ./cinnamon-risk-assessment:/app
     cinnamon-anonymization:
-        image:  ghcr.io/ki-aim/cinnamon-anonymization:latest
+        image: ghcr.io/ki-aim/cinnamon-anonymization@sha256:b46ce594bb33f9a66743d63e8da85f783b0c7caf03364fc0b0f98a073c3f53d4  # Stand 7a69ae8c (17.06.2026)
         container_name: cinnamon-anonymization
         restart: unless-stopped
         ports:
