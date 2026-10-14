@@ -109,7 +109,7 @@ services:
         networks:
             - evaluation-network
     cinnamon-risk-assessment:
-        build: ./cinnamon-risk-assessment
+        image: ghcr.io/ki-aim/cinnamon-risk-assessment@sha256:ec97798159ae6ce8363b08521f6b6083bc24769b85e9994804b78353f0e290a3  # Stand 7a69ae8c (17.06.2026)
         container_name: cinnamon-risk-assessment
         restart: unless-stopped
         ports:
