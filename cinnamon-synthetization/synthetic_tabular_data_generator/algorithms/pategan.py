@@ -10,7 +10,7 @@ from synthetic_tabular_data_generator.tabular_data_synthesizer import TabularDat
 
 
 class PateganSynthesizer(TabularDataSynthesizer):
-    """Wrapper for SynthCity's PATE-GAN plugin."""
+    """Wrapper for SynthCity's PATE-GAN plugin. Structure similar to CtganSynthesizer"""
 
 
     def __init__(
@@ -25,7 +25,7 @@ class PateganSynthesizer(TabularDataSynthesizer):
         self.synthesizer = None
         self._sampling: Optional[Dict[str, Any]] = None
 
-    """config ist ein Dictionary wobei der Schlüssel ein Str ist und das Wert alles sein kann, None: die Funktion hat kein Rückgabetyp"""
+    """config ist ein Dictionary wobei der Schlüssel ein Str ist und der Wert alles sein kann, None: die Funktion hat kein Rückgabetyp"""
     def _initialize_anonymization_configuration(self, config: Dict[str, Any]) -> None:
         """Initialize synthesizer and sampling parameters."""
         synth_params = config["synthetization_configuration"]["algorithm"]["model_parameter"]
@@ -33,7 +33,7 @@ class PateganSynthesizer(TabularDataSynthesizer):
         hidden_layers = int(synth_params["number_of_layers"])
         hidden_units = int(synth_params["number_of_units_in_layers"])
         batch_size = int(training_params["batch_size"])
-        epsilon = float(training_params["epsilon"])
+        epsilon = float(training_params["epsilon"])   # Privacy-Budget
 
         self._model_kwargs = {
             # GAN
@@ -42,7 +42,7 @@ class PateganSynthesizer(TabularDataSynthesizer):
             "generator_n_units_hidden": hidden_units,
             "discriminator_n_layers_hidden": hidden_layers,
             "discriminator_n_units_hidden": hidden_units,
-            "generator_n_iter": 10,
+            "generator_n_iter": 10,  # checken was das nochmal war
             "lr": float(2e-4),
             "weight_decay": float(1e-6),
             "batch_size": batch_size,
@@ -52,7 +52,7 @@ class PateganSynthesizer(TabularDataSynthesizer):
             "sampling_patience": 500,
             # Privacy
             "epsilon": epsilon,
-
+            # PATE-specific
             "n_teachers": int(training_params["n_teachers"]),
             "teacher_template": "xgboost",
             "lamda": float(training_params["lamda"]),

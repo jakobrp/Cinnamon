@@ -85,7 +85,7 @@ synthetization_configuration:
     model_fitting:
       batch_size: 256
       epochs: 50
-      epsilon: 5
+      epsilon: 0.1
       delta: 1.0E-5
     sampling:
       num_samples: 70000

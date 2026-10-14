@@ -90,12 +90,12 @@ synthesizer_classes = {
         'URL': '/synthetic_tabular_data_generator/synthesizer_config/llm_nearest_neighbor_knowledge_grounded_text_synthesis.yaml'
     },
     'dpgan': {
-            'version': '0.1',
-            'type': 'cross-sectional',
-            'class': DpganSynthesizer,
-            'display_name': 'DP-GAN (Differentially Private Gan)',
-            'description': 'A differentially private GAN that trains its discriminator with DP-SGD to give the generated data a formal (epsilon, delta) privacy guarantee',
-            'URL': '/synthetic_tabular_data_generator/synthesizer_config/dpgan.yaml'
+        'version': '0.1',
+        'type': 'cross-sectional',
+        'class': DpganSynthesizer,
+        'display_name': 'DP-GAN (Differentially Private Gan)',
+        'description': 'A differentially private GAN that trains its discriminator with DP-SGD to give the generated data a formal (epsilon, delta) privacy guarantee',
+        'URL': '/synthetic_tabular_data_generator/synthesizer_config/dpgan.yaml'
     },
     'pategan': {
         'version': '0.1',

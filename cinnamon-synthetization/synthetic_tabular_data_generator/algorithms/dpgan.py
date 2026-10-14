@@ -10,7 +10,7 @@ from synthetic_tabular_data_generator.tabular_data_synthesizer import TabularDat
 
 
 class DpganSynthesizer(TabularDataSynthesizer):
-    """Wrapper for synthcity's DPGAN plugin."""
+    """Wrapper for synthcity's DPGAN plugin. Structure similar to CtganSynthesizer"""
 
 
     def __init__(
@@ -78,7 +78,9 @@ class DpganSynthesizer(TabularDataSynthesizer):
 
     def _get_model(self) -> bytes:
         """Serialize the synthesizer instance."""
-        """Return a minimal placeholder model for testing."""
+        """Return a minimal placeholder model for testing, 
+        Error while loading in the UI; it worked without a return value
+        """
         return cloudpickle.dumps(None)
 
     def _load_model(self, filepath: str) -> "DpganSynthesizer":

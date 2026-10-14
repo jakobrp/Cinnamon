@@ -84,13 +84,13 @@ synthetization_configuration:
     model_fitting:
       batch_size: 256
       epochs: 200
-      epsilon: 5
+      epsilon: 1
       delta: 1.0E-5
       n_teachers: 10
       lamda: 0.001
       alpha: 100
     sampling:
-      num_samples: 7000
+      num_samples: 70000
     type: "cross-sectional"
 evaluation_configuration:
   algorithm:

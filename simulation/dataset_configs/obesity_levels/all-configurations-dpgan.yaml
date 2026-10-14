@@ -109,8 +109,8 @@ synthetization_configuration:
       number_of_units_in_layers: 256
     model_fitting:
       batch_size: 64
-      epochs: 800
-      epsilon: 5
+      epochs: 380
+      epsilon: 1
       delta: 1.0E-5
     sampling:
       num_samples: 2111

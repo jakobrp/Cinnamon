@@ -16,8 +16,8 @@ CINNAMON_URL = "http://localhost:8080/api"
 DEFAULT_DATASET = "pima_diabetes"
 DEFAULT_HOLDOUT = 0.2  # Nur für Stroke und cardiovascular auf 0.3, alle anderen 0.2
 POLL_INTERVAL_SECONDS = 5
-RUNS = 3
-DEFAULT_SYNTH_ALGO = "bayesian_network"
+RUNS = 5
+DEFAULT_SYNTH_ALGO = "arf"
 
 # Run: python simulation/sim_anon.py --dataset pima_diabetes --runs 5 --holdout 0.2
 # Für die echten Läufe: --label dpgan_eps1 (o. ä.), damit sich Configs nicht überschreiben.
@@ -331,7 +331,7 @@ def main():
     parser.add_argument("--config", help="Path to all-configurations.yaml.")
     parser.add_argument("--data", help="Path to the input CSV dataset.")
     parser.add_argument("--output-dir", help="Directory to write results (overrides label folder).")
-    parser.add_argument("--label", help="Output/category folder, e.g. dpgan_eps1. Default: synthesizer name.")
+    parser.add_argument("--label", help="Output/category folder, e.g. dpgan_eps1. Default: synthesizer name.") # New
     parser.add_argument("--cinnamon-url", default=CINNAMON_URL, help="Cinnamon API base URL.")
     parser.add_argument("--email", help="User email for the Cinnamon API.")
     parser.add_argument("--password", help="Password for the Cinnamon API.")
@@ -425,8 +425,9 @@ def main():
                 post_configure(context, "synthetization", skip=False)
                 post_configure(context, "technical_evaluation", skip=False)
                 post_configure(context, "risk_evaluation")
+                # Würde sonst automatisch als Teil der evaluation-Stufe mitlaufen.
                 post_configure(context, "risk_evaluation_o", skip=True)
-                # risk_evaluation_o laeuft automatisch als Teil der evaluation-Stufe mit.
+
 
                 run_stage(context, "execution")
                 time.sleep(10)

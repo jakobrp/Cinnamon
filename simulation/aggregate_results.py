@@ -9,6 +9,12 @@ except ImportError:  # pragma: no cover - optional dependency
     Workbook = None
 
 
+DEFAULT_DATASET = "heart_failure"
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_ROOT = BASE_DIR / "experiment_results" / DEFAULT_DATASET
+
+# Ordner, die immer vorhanden sind und fest zugeordnet werden.
 DEFAULT_SUBFOLDERS = [
     "anon/tech_eval",
     "anon/risk_eval",
@@ -17,9 +23,10 @@ DEFAULT_SUBFOLDERS = [
     "real_risk",
 ]
 
-DEFAULT_DATASET = "cardiovascular"
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_ROOT = BASE_DIR / "experiment_results" / DEFAULT_DATASET
+# Ordnernamen, die NICHT als zusaetzliches Label gelten. Sind als Baseline schon vorhanden
+FIXED_FOLDERS = {"anon", "anon_synth", "real_risk"}
+
+BASE_LABELS = ["real", "anon", "anon_synth"]
 
 TECH_EVAL_FOLDERS = {
     "anon": "anon/tech_eval",
@@ -44,6 +51,23 @@ RISK_METRICS = [
 ]
 
 PRIVACY_METRIC = "privacy_score"
+
+
+#Methode von Claude generiert
+def discover_extras(root: Path) -> List[str]:
+    """Findet automatisch alle Label-Ordner ausser den festen, die einen tech_eval-Unterordner haben."""
+    if not root.exists():
+        return []
+    extras: List[str] = []
+    for child in sorted(root.iterdir()):
+        if not child.is_dir():
+            continue
+        if child.name in FIXED_FOLDERS:
+            continue
+        if (child / "tech_eval").is_dir():
+            extras.append(child.name)
+    return extras
+
 
 def load_json_files(folder: Path) -> List[Tuple[Path, Any]]:
     if not folder.exists():
@@ -78,6 +102,8 @@ def extract_overview_metrics(payload: Any) -> Dict[str, Dict[str, Any]]:
     if not isinstance(overview, dict):
         return {}
     aggregated = overview.get("aggregated_metrics", [])
+    if isinstance(aggregated, dict):
+        aggregated = [aggregated]  # Dict in einelementige Liste verpacken
     if not isinstance(aggregated, list):
         return {}
 
@@ -110,6 +136,12 @@ def extract_risk_metrics(payload: Any) -> Dict[str, Any]:
             metrics[metric] = payload.get(metric)
     return metrics
 
+#Zu eigener Funktion gemacht
+def combined_value(resemblance: Any, utility: Any) -> Any:
+    if resemblance is None or utility is None:
+        return None
+    return (resemblance + utility) / 2
+
 
 def build_rows(
     anon_items: List[Tuple[Path, Any]],
@@ -117,17 +149,24 @@ def build_rows(
     anon_risk_items: List[Tuple[Path, Any]],
     anon_synth_risk_items: List[Tuple[Path, Any]],
     real_risk_items: List[Tuple[Path, Any]],
+    extras: Dict[str, Tuple[List[Tuple[Path, Any]], List[Tuple[Path, Any]]]],
 ) -> List[Dict[str, Any]]:
-    max_runs = max(
+    lengths = [
         len(anon_items),
         len(anon_synth_items),
         len(anon_risk_items),
         len(anon_synth_risk_items),
         len(real_risk_items),
-    )
+    ]
+    for tech_items, risk_items in extras.values():
+        lengths.append(len(tech_items))
+        lengths.append(len(risk_items))
+    max_runs = max(lengths) if lengths else 0
+
     rows: List[Dict[str, Any]] = []
     for run_index in range(max_runs):
         row: Dict[str, Any] = {"run": run_index + 1}
+
         anon_metrics = (
             extract_overview_metrics(anon_items[run_index][1])
             if run_index < len(anon_items)
@@ -165,11 +204,6 @@ def build_rows(
             row[f"{metric}_anon"] = anon_metrics.get(metric, {}).get("synthetic")
             row[f"{metric}_anon_synth"] = anon_synth_metrics.get(metric, {}).get("synthetic")
 
-        def combined_value(resemblance: Any, utility: Any) -> Any:
-            if resemblance is None or utility is None:
-                return None
-            return (resemblance + utility) / 2
-
         row[f"{COMBINED_UTILITY_METRIC}_real"] = combined_value(
             row.get("overall_resemblance_real"), row.get("overall_utility_real")
         )
@@ -194,11 +228,38 @@ def build_rows(
                 1.0 - anon_synth_value if anon_synth_value is not None else None
             )
 
+        # Zusaetzliche Label (dpgan_eps5, pategan_eps1, ...) generisch behandeln.
+        for label, (tech_items, risk_items) in extras.items():
+            tech_metrics = (
+                extract_overview_metrics(tech_items[run_index][1])
+                if run_index < len(tech_items)
+                else {}
+            )
+            risk_metrics = (
+                extract_risk_metrics(risk_items[run_index][1])
+                if run_index < len(risk_items)
+                else {}
+            )
+
+            for metric in TECH_EVAL_METRICS:
+                row[f"{metric}_{label}"] = tech_metrics.get(metric, {}).get("synthetic")
+
+            row[f"{COMBINED_UTILITY_METRIC}_{label}"] = combined_value(
+                row.get(f"overall_resemblance_{label}"),
+                row.get(f"overall_utility_{label}"),
+            )
+
+            for metric in RISK_METRICS:
+                risk_value = risk_metrics.get(metric)
+                row[f"{PRIVACY_METRIC}_{label}"] = (
+                    1.0 - risk_value if risk_value is not None else None
+                )
+
         rows.append(row)
     return rows
 
 
-def write_excel(rows: List[Dict[str, Any]], output_path: Path) -> None:
+def write_excel(rows: List[Dict[str, Any]], output_path: Path, labels: List[str]) -> None:
     if Workbook is None:
         raise RuntimeError("openpyxl is required to write Excel files. Install it with: pip install openpyxl")
     workbook = Workbook()
@@ -206,28 +267,9 @@ def write_excel(rows: List[Dict[str, Any]], output_path: Path) -> None:
     sheet.title = "evaluation"
 
     headers = ["run"]
-    for metric in TECH_EVAL_METRICS:
-        headers.extend(
-            [
-                f"{metric}_real",
-                f"{metric}_anon",
-                f"{metric}_anon_synth",
-            ]
-        )
-    headers.extend(
-        [
-            f"{COMBINED_UTILITY_METRIC}_real",
-            f"{COMBINED_UTILITY_METRIC}_anon",
-            f"{COMBINED_UTILITY_METRIC}_anon_synth",
-        ]
-    )
-    headers.extend(
-        [
-            f"{PRIVACY_METRIC}_real",
-            f"{PRIVACY_METRIC}_anon",
-            f"{PRIVACY_METRIC}_anon_synth",
-        ]
-    )
+    for metric in TECH_EVAL_METRICS + [COMBINED_UTILITY_METRIC, PRIVACY_METRIC]:
+        headers.extend(f"{metric}_{label}" for label in labels)
+
     sheet.append(headers)
     for row in rows:
         sheet.append([row.get(header) for header in headers])
@@ -244,10 +286,9 @@ def main() -> None:
         help="Base folder containing result subfolders (e.g., simulation/experiment_results/heart_failure).",
     )
     parser.add_argument(
-        "--folders",
+        "--extras",
         nargs="*",
-        default=DEFAULT_SUBFOLDERS,
-        help="Subfolders under --root to scan for JSON files.",
+        help="Explicit extra label folders (e.g. dpgan_eps5 pategan_eps1). Default: auto-detect.",
     )
     parser.add_argument(
         "--output",
@@ -256,8 +297,18 @@ def main() -> None:
     args = parser.parse_args()
 
     root = Path(args.root)
-    folders = args.folders
     output = Path(args.output) if args.output else root / "evaluation_summary.xlsx"
+
+    extra_names = args.extras if args.extras is not None else discover_extras(root)
+    if extra_names:
+        print(f"Extra labels: {', '.join(extra_names)}")
+    else:
+        print("Extra labels: none")
+
+    folders = list(DEFAULT_SUBFOLDERS)
+    for name in extra_names:
+        folders.append(f"{name}/tech_eval")
+        folders.append(f"{name}/risk_eval")
 
     loaded = load_all(root, folders)
     for folder, items in loaded.items():
@@ -268,14 +319,24 @@ def main() -> None:
     anon_risk_items = loaded.get(RISK_FOLDERS["anon"], [])
     anon_synth_risk_items = loaded.get(RISK_FOLDERS["anon_synth"], [])
     real_risk_items = loaded.get(RISK_FOLDERS["real"], [])
+
+    extras = {
+        name: (
+            loaded.get(f"{name}/tech_eval", []),
+            loaded.get(f"{name}/risk_eval", []),
+        )
+        for name in extra_names
+    }
+
     rows = build_rows(
         anon_items,
         anon_synth_items,
         anon_risk_items,
         anon_synth_risk_items,
         real_risk_items,
+        extras,
     )
-    write_excel(rows, output)
+    write_excel(rows, output, BASE_LABELS + extra_names)
     print(f"Wrote evaluation summary to {output}")
 
 

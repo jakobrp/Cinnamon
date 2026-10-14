@@ -110,7 +110,7 @@ synthetization_configuration:
     model_fitting:
       batch_size: 64
       epochs: 200
-      epsilon: 5
+      epsilon: 0.1
       delta: 1.0E-5
       n_teachers: 10
       lamda: 0.001
