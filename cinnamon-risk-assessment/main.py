@@ -214,51 +214,23 @@ async def get_report(
     low_reasons = []
     high_reasons = []
 
-    linkage_data = risks_data.get("linkage_health_risk")
-    if linkage_data is not None and linkage_data.get("risk_value") is not None:
-        linkage = linkage_data["risk_value"]
+    linkage = risks_data['linkage_health_risk']['risk_value']
+    if linkage < 0.5:
+        low_reasons.append('Overall low risk that the protected dataset can be used for data linkage')
+    else:
+        high_reasons.append('Overall high risk that the protected dataset can be used for data linkage')
 
-        if linkage < 0.5:
-            low_reasons.append(
-                "Overall low risk that the protected dataset can be used "
-                "for data linkage"
-            )
-        else:
-            high_reasons.append(
-                "Overall high risk that the protected dataset can be used "
-                "for data linkage"
-            )
+    inference = risks_data['inference_average_risk']['priv_risk']
+    if inference < 0.5:
+        low_reasons.append('Overall low risk that the protected dataset can be used for attribute inference attacks')
+    else:
+        high_reasons.append('Overall high risk that the protected dataset can be used for attribute inference attacks')
 
-    inference_data = risks_data.get("inference_average_risk")
-    if inference_data is not None and inference_data.get("priv_risk") is not None:
-        inference = inference_data["priv_risk"]
-
-        if inference < 0.5:
-            low_reasons.append(
-                "Overall low risk that the protected dataset can be used "
-                "for attribute inference attacks"
-            )
-        else:
-            high_reasons.append(
-                "Overall high risk that the protected dataset can be used "
-                "for attribute inference attacks"
-            )
-
-    singling_out_data = risks_data.get("univariate_singling_out_risk")
-
-    if singling_out_data is not None and singling_out_data.get("risk_value") is not None:
-        singling_out = singling_out_data["risk_value"]
-
-        if singling_out < 0.5:
-            low_reasons.append(
-                "Overall low risk that records in the protected data "
-                "could be clearly separated from other records"
-            )
-        else:
-            high_reasons.append(
-                "Overall high risk that records in the protected data "
-                "could be clearly separated from other records"
-            )
+    singling_out = risks_data['univariate_singling_out_risk']['risk_value']
+    if singling_out < 0.5:
+        low_reasons.append('Overall low risk that records in the protected data could be clearly separated from other records')
+    else:
+        high_reasons.append('Overall high risk that records in the protected data could be clearly separated from other records')
 
     overview = f'<div class="report-split-1-1"><div class="report-metric-card"><div><strong>Identified High Privacy Risk</strong></div><div><ul>'
     for reason in high_reasons:
@@ -282,5 +254,3 @@ async def get_report(
 async def health_check():
     status = {"status": "UP"}
     return JSONResponse(content=status, status_code=200)
-
-
