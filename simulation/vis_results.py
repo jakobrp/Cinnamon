@@ -21,10 +21,10 @@ DEFAULT_ROOT = BASE_DIR / "experiment_results" / DEFAULT_DATASET
 SUMMARY_XLSX = "evaluation_summary.xlsx"
 SUMMARY_CSV = "evaluation_summary.csv"
 
-# Feste Reihenfolge fuer die Baseline; alles Weitere wird erkannt.
+# Feste Reihenfolge für die Baseline; alles Weitere wird erkannt.
 BASE_LABELS = ["real", "anon", "anon_synth"]
 
-# Feste Farben der Baseline, DP-Varianten bekommen ihre Farbe ueber build_colors.
+# Feste Farben der Baseline, DP-Varianten bekommen ihre Farbe über build_colors.
 BASE_COLORS = {
     "real": "#333333",
     "anon": "#1f77b4",
@@ -98,7 +98,7 @@ def discover_labels(rows: List[Dict[str, Any]]) -> List[str]:
     ordered += sorted(label for label in found if label not in BASE_LABELS)
     return ordered
 
-# mithilfe von Claude generiert
+# von Claude generiert
 def build_colors(labels: List[str]) -> Dict[str, str]:
     """Pro Verfahren eine Farbfamilie, innerhalb davon nach eps abgestuft.
 
@@ -129,7 +129,7 @@ def build_colors(labels: List[str]) -> Dict[str, str]:
             colors[label] = shade
     return colors
 
-# mithilfe von Claude generiert
+# von Claude generiert
 def method_chains(labels: List[str]) -> List[List[str]]:
     """Pfeilketten (vorher keine eigene Funktion): Baseline als eine, jedes Verfahren nach eps sortiert."""
     chains: List[List[str]] = [] # Jede innere Liste ist Kette von Labels
@@ -206,12 +206,12 @@ def plot_privacy_utility_tradeoff(
     colors: Dict[str, str],
 ) -> None:
     """x = Privacy, y = Utility, ein Punkt pro Variante.
-    labels und colors werden uebergeben statt fest im Code zu stehen."""
+    labels und colors werden übergeben statt fest im Code zu stehen."""
     if plt is None:
         raise RuntimeError("matplotlib is required to plot figures. Install it with: pip install matplotlib")
 
     fig, ax = plt.subplots(figsize=(9, 6))
-    # Mittelwerte pro Variante merken, damit die Pfeile spaeter daran ansetzen koennen.
+    # Mittelwerte pro Variante merken, damit die Pfeile später daran ansetzen können.
     mean_points: Dict[str, Tuple[float, float]] = {}
 
     for label in labels:
@@ -317,7 +317,7 @@ def plot_summary_bars(
         )
         ax.set_title(title)
         ax.set_ylim(0.0, 1.0)
-        # Beschriftung schraeg stellen, sonst ueberlappen die langen Labels.
+        # Beschriftung schräg stellen, sonst überlappen die langen Labels.
         ax.set_xticks(range(len(labels)))
         ax.set_xticklabels(labels, rotation=35, ha="right", fontsize=8)
         ax.grid(True, axis="y", linestyle="--", alpha=0.3)
@@ -352,7 +352,7 @@ def main() -> None:
         "--summary",
         help="Explicit path to the summary file (xlsx or csv).",
     )
-    # Optional: nur bestimmte Varianten plotten, z.B. --labels anon dpgan_eps1
+
     parser.add_argument(
         "--labels",
         nargs="*",

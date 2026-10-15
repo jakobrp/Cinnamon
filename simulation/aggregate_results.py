@@ -23,10 +23,10 @@ DEFAULT_SUBFOLDERS = [
     "real_risk",
 ]
 
-# Ordnernamen, die NICHT als zusaetzliches Label gelten. Sind als Baseline schon vorhanden
+# Ordnernamen, die NICHT als zusätzliches Label gelten. Sind als Baseline schon vorhanden
 FIXED_FOLDERS = {"anon", "anon_synth", "real_risk"}
 
-# Baseline-Varianten in fester Reihenfolge, bestimmen die ersten Spalten in der Excel.
+# Baseline-Varianten in fester Reihenfolge bestimmen die ersten Spalten in der Excel.
 BASE_LABELS = ["real", "anon", "anon_synth"]
 
 TECH_EVAL_FOLDERS = {
@@ -65,7 +65,7 @@ def discover_extras(root: Path) -> List[str]:
             continue
         if child.name in FIXED_FOLDERS:
             continue
-        # Nur Ordner mit tech_eval zaehlen als Ergebnis eines Laufs (z.B. dpgan_eps1/tech_eval).
+        # Nur Ordner mit tech_eval zählen als Ergebnis eines Laufs (z.B. dpgan_eps1/tech_eval).
         if (child / "tech_eval").is_dir():
             extras.append(child.name)
     return extras
@@ -140,7 +140,7 @@ def extract_risk_metrics(payload: Any) -> Dict[str, Any]:
 
 #Zu eigener Funktion gemacht
 def combined_value(resemblance: Any, utility: Any) -> Any:
-    # Fehlt einer der beiden Werte, bleibt die Zelle leer statt falsch gemittelt.
+
     if resemblance is None or utility is None:
         return None
     return (resemblance + utility) / 2
@@ -152,7 +152,7 @@ def build_rows(
     anon_risk_items: List[Tuple[Path, Any]],
     anon_synth_risk_items: List[Tuple[Path, Any]],
     real_risk_items: List[Tuple[Path, Any]],
-    # Neu: {label: (tech_eval-Dateien, risk_eval-Dateien)} fuer alle DP-Varianten
+    # Neu: {label: (tech_eval-Dateien, risk_eval-Dateien)} für alle DP-Varianten
     extras: Dict[str, Tuple[List[Tuple[Path, Any]], List[Tuple[Path, Any]]]],
 ) -> List[Dict[str, Any]]:
     lengths = [
@@ -162,7 +162,7 @@ def build_rows(
         len(anon_synth_risk_items),
         len(real_risk_items),
     ]
-    # Auch die Anzahl Runs der DP-Varianten beruecksichtigen (z.B. 25 Runs statt 5 bei der Baseline).
+
     for tech_items, risk_items in extras.values():
         lengths.append(len(tech_items))
         lengths.append(len(risk_items))
@@ -209,7 +209,7 @@ def build_rows(
             row[f"{metric}_anon"] = anon_metrics.get(metric, {}).get("synthetic")
             row[f"{metric}_anon_synth"] = anon_synth_metrics.get(metric, {}).get("synthetic")
 
-        # Combined Utility = (Resemblance + Utility) / 2 fuer die Baseline
+        # Combined Utility = (Resemblance + Utility) / 2 für die Baseline
         row[f"{COMBINED_UTILITY_METRIC}_real"] = combined_value(
             row.get("overall_resemblance_real"), row.get("overall_utility_real")
         )
@@ -234,7 +234,7 @@ def build_rows(
                 1.0 - anon_synth_value if anon_synth_value is not None else None
             )
 
-        # Zusaetzliche Label (dpgan_eps5, pategan_eps1, ...) generisch behandeln.
+        # Zusätzliche Label (dpgan_eps5, pategan_eps1, ...) generisch behandeln.
         for label, (tech_items, risk_items) in extras.items():
             tech_metrics = (
                 extract_overview_metrics(tech_items[run_index][1])
@@ -247,7 +247,7 @@ def build_rows(
                 else {}
             )
 
-            # Nur "synthetic" uebernehmen, der "real"-Wert steht schon in der real-Spalte.
+            # Nur "synthetic" übernehmen, der "real"-Wert steht schon in der real-Spalte.
             for metric in TECH_EVAL_METRICS:
                 row[f"{metric}_{label}"] = tech_metrics.get(metric, {}).get("synthetic")
 
@@ -275,14 +275,14 @@ def write_excel(rows: List[Dict[str, Any]], output_path: Path, labels: List[str]
     sheet = workbook.active
     sheet.title = "evaluation"
 
-    # Spalten nach Metrik gruppiert: overall_resemblance_real, ..._anon, ..._dpgan_eps1, dann naechste Metrik
+    # Spalten nach Metrik gruppiert: overall_resemblance_real, ..._anon, ..._dpgan_eps1, dann nächste Metrik
     headers = ["run"]
     for metric in TECH_EVAL_METRICS + [COMBINED_UTILITY_METRIC, PRIVACY_METRIC]:
         headers.extend(f"{metric}_{label}" for label in labels)
 
     sheet.append(headers)
     for row in rows:
-        # Fehlende Werte (z.B. Baseline hat weniger Runs) werden zu leeren Zellen.
+
         sheet.append([row.get(header) for header in headers])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
