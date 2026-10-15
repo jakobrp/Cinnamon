@@ -44,7 +44,11 @@ Der Tag `abgabe-stand` markiert den Stand zur Abgabe.
 
 Voraussetzung: Docker Desktop.
 
-Zuerst die Umgebungsdatei anlegen (falls noch nicht vorhanden):
+Den Ordner `Cinnamon` vor dem Start auf die lokale Festplatte kopieren
+(z. B. nach `C:\Cinnamon`). Docker Desktop kann die Code-Ordner, die in die
+Container eingebunden werden, nicht zuverlässig von USB-Sticks lesen.
+
+Im Ordner die Umgebungsdatei anlegen (falls noch nicht vorhanden):
 
 ```powershell
 Copy-Item .env.example .env
@@ -60,17 +64,20 @@ docker compose up -d
 ```
 
 Die Original-Images werden per Digest von ghcr.io geladen, die Synthese wird
-lokal mit festgelegten Paketversionen gebaut (beim ersten Start ca. 20–30 Minuten).
+lokal mit festgelegten Paketversionen gebaut.
 
 ### Variante B: offline
 
 ```powershell
-docker load -i cinnamon-images-abgabe.tar
-docker compose up -d
+docker load -i <Pfad>\cinnamon-images-abgabe.tar
+docker compose -f docker-compose.yml -f docker-compose.offline.yml up -d
 ```
 
 `cinnamon-images-abgabe.tar` enthält alle Images fertig gebaut in der getesteten
-Version. Es wird nichts heruntergeladen oder gebaut.
+Version und kann direkt vom Stick geladen werden. Die Zusatzdatei
+`docker-compose.offline.yml` verwendet die lokalen `:abgabe`-Tags statt der
+Digests, damit nichts aus dem Internet geladen wird. Die Images sind inhaltlich
+identisch mit den Digests in `docker-compose.yml` (gleiche Image-ID).
 
 Die Oberfläche ist danach unter http://localhost:8080 erreichbar.
 

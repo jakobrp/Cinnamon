@@ -1,0 +1,24 @@
+# Offline-Start mit den Images aus cinnamon-images-abgabe.tar.
+# Verwendet lokale :abgabe-Tags statt der Digests und lädt nichts aus dem Internet.
+# Die Images sind inhaltlich identisch mit den Digests in docker-compose.yml.
+#
+# Start: docker load -i cinnamon-images-abgabe.tar
+#        docker compose -f docker-compose.yml -f docker-compose.offline.yml up -d
+
+services:
+    cinnamon-platform:
+        image: cinnamon-platform:abgabe
+        pull_policy: never
+    cinnamon-evaluation:
+        image: cinnamon-evaluation:abgabe
+        pull_policy: never
+    cinnamon-anonymization:
+        image: cinnamon-anonymization:abgabe
+        pull_policy: never
+    cinnamon-risk-assessment:
+        image: cinnamon-risk-assessment:abgabe
+        pull_policy: never
+    cinnamon-db:
+        pull_policy: never
+    cinnamon-synthetization:
+        pull_policy: never
