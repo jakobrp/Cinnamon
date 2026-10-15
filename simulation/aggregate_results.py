@@ -26,6 +26,7 @@ DEFAULT_SUBFOLDERS = [
 # Ordnernamen, die NICHT als zusaetzliches Label gelten. Sind als Baseline schon vorhanden
 FIXED_FOLDERS = {"anon", "anon_synth", "real_risk"}
 
+# Baseline-Varianten in fester Reihenfolge, bestimmen die ersten Spalten in der Excel.
 BASE_LABELS = ["real", "anon", "anon_synth"]
 
 TECH_EVAL_FOLDERS = {
@@ -64,6 +65,7 @@ def discover_extras(root: Path) -> List[str]:
             continue
         if child.name in FIXED_FOLDERS:
             continue
+        # Nur Ordner mit tech_eval zaehlen als Ergebnis eines Laufs (z.B. dpgan_eps1/tech_eval).
         if (child / "tech_eval").is_dir():
             extras.append(child.name)
     return extras
@@ -138,6 +140,7 @@ def extract_risk_metrics(payload: Any) -> Dict[str, Any]:
 
 #Zu eigener Funktion gemacht
 def combined_value(resemblance: Any, utility: Any) -> Any:
+    # Fehlt einer der beiden Werte, bleibt die Zelle leer statt falsch gemittelt.
     if resemblance is None or utility is None:
         return None
     return (resemblance + utility) / 2
@@ -149,6 +152,7 @@ def build_rows(
     anon_risk_items: List[Tuple[Path, Any]],
     anon_synth_risk_items: List[Tuple[Path, Any]],
     real_risk_items: List[Tuple[Path, Any]],
+    # Neu: {label: (tech_eval-Dateien, risk_eval-Dateien)} fuer alle DP-Varianten
     extras: Dict[str, Tuple[List[Tuple[Path, Any]], List[Tuple[Path, Any]]]],
 ) -> List[Dict[str, Any]]:
     lengths = [
@@ -158,6 +162,7 @@ def build_rows(
         len(anon_synth_risk_items),
         len(real_risk_items),
     ]
+    # Auch die Anzahl Runs der DP-Varianten beruecksichtigen (z.B. 25 Runs statt 5 bei der Baseline).
     for tech_items, risk_items in extras.values():
         lengths.append(len(tech_items))
         lengths.append(len(risk_items))
@@ -204,6 +209,7 @@ def build_rows(
             row[f"{metric}_anon"] = anon_metrics.get(metric, {}).get("synthetic")
             row[f"{metric}_anon_synth"] = anon_synth_metrics.get(metric, {}).get("synthetic")
 
+        # Combined Utility = (Resemblance + Utility) / 2 fuer die Baseline
         row[f"{COMBINED_UTILITY_METRIC}_real"] = combined_value(
             row.get("overall_resemblance_real"), row.get("overall_utility_real")
         )
@@ -241,6 +247,7 @@ def build_rows(
                 else {}
             )
 
+            # Nur "synthetic" uebernehmen, der "real"-Wert steht schon in der real-Spalte.
             for metric in TECH_EVAL_METRICS:
                 row[f"{metric}_{label}"] = tech_metrics.get(metric, {}).get("synthetic")
 
@@ -249,6 +256,7 @@ def build_rows(
                 row.get(f"overall_utility_{label}"),
             )
 
+            # Privacy Score = 1 - Risiko, wie bei der Baseline
             for metric in RISK_METRICS:
                 risk_value = risk_metrics.get(metric)
                 row[f"{PRIVACY_METRIC}_{label}"] = (
@@ -260,18 +268,21 @@ def build_rows(
 
 
 def write_excel(rows: List[Dict[str, Any]], output_path: Path, labels: List[str]) -> None:
+    """labels wird uebergeben, damit auch die DP-Varianten eigene Spalten bekommen."""
     if Workbook is None:
         raise RuntimeError("openpyxl is required to write Excel files. Install it with: pip install openpyxl")
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "evaluation"
 
+    # Spalten nach Metrik gruppiert: overall_resemblance_real, ..._anon, ..._dpgan_eps1, dann naechste Metrik
     headers = ["run"]
     for metric in TECH_EVAL_METRICS + [COMBINED_UTILITY_METRIC, PRIVACY_METRIC]:
         headers.extend(f"{metric}_{label}" for label in labels)
 
     sheet.append(headers)
     for row in rows:
+        # Fehlende Werte (z.B. Baseline hat weniger Runs) werden zu leeren Zellen.
         sheet.append([row.get(header) for header in headers])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -285,6 +296,7 @@ def main() -> None:
         default=str(DEFAULT_ROOT),
         help="Base folder containing result subfolders (e.g., simulation/experiment_results/heart_failure).",
     )
+    # Ersetzt das alte --folders: optional bestimmte Varianten angeben, sonst automatisch erkennen.
     parser.add_argument(
         "--extras",
         nargs="*",
@@ -299,12 +311,14 @@ def main() -> None:
     root = Path(args.root)
     output = Path(args.output) if args.output else root / "evaluation_summary.xlsx"
 
+    # Ohne --extras werden alle Label-Ordner im Datensatzordner gesucht.
     extra_names = args.extras if args.extras is not None else discover_extras(root)
     if extra_names:
         print(f"Extra labels: {', '.join(extra_names)}")
     else:
         print("Extra labels: none")
 
+    # Zu ladende Ordner: feste Baseline-Ordner plus tech_eval/risk_eval je DP-Variante.
     folders = list(DEFAULT_SUBFOLDERS)
     for name in extra_names:
         folders.append(f"{name}/tech_eval")
@@ -320,6 +334,7 @@ def main() -> None:
     anon_synth_risk_items = loaded.get(RISK_FOLDERS["anon_synth"], [])
     real_risk_items = loaded.get(RISK_FOLDERS["real"], [])
 
+    # Pro DP-Variante die geladenen tech_eval- und risk_eval-Dateien zusammenfassen.
     extras = {
         name: (
             loaded.get(f"{name}/tech_eval", []),
@@ -336,6 +351,7 @@ def main() -> None:
         real_risk_items,
         extras,
     )
+    # Spalten: erst Baseline, dann alle DP-Varianten
     write_excel(rows, output, BASE_LABELS + extra_names)
     print(f"Wrote evaluation summary to {output}")
 

@@ -13,14 +13,17 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 CINNAMON_URL = "http://localhost:8080/api"
-DEFAULT_DATASET = "pima_diabetes"
+DEFAULT_DATASET = "pima_diabetes"  # vorher cardiovascular
 DEFAULT_HOLDOUT = 0.2  # Nur für Stroke und cardiovascular auf 0.3, alle anderen 0.2
 POLL_INTERVAL_SECONDS = 5
-RUNS = 5
+RUNS = 5  # vorher 10; fuer die Experimente per --runs 25 gesetzt
 DEFAULT_SYNTH_ALGO = "arf"
 
 # Run: python simulation/sim_anon.py --dataset heart_failure --label pategan_eps5 --config dataset_configs/heart_failure/all-configurations-pategan.yaml --holdout 0.2 --runs 25
 # --label legt den Ergebnisordner fest (experiment_results/<dataset>/<label>), damit sich Läufe nicht überschreiben.
+
+# Angepasst gegenueber dem Original: statt drei Phasen (real_risk, anon, anon_synth)
+# nur noch Synthese auf Rohdaten + Evaluation. Die Baseline-Ordner stammen aus dem Referenzexperiment.
 
 _TOP_LEVEL_KEY_RE = re.compile(r"^[A-Za-z0-9_-]+:\s*(#.*)?$")
 
@@ -174,6 +177,8 @@ def post_run_stage(context: CinnamonContext, stage_name: str, job_name: Optional
 def get_process_status(context: CinnamonContext, stage_name: str):
     url = f"{CINNAMON_URL}/process"
     last_error = None
+    # Bei langen Trainings antwortete die Plattform teilweise nicht rechtzeitig.
+    # Statt abzubrechen bis zu 30 Versuche im Abstand von 10s (insgesamt ca. 5 Minuten).
     for attempt in range(30):
         try:
             response = requests.get(url, auth=create_auth(context), timeout=60)
@@ -331,7 +336,7 @@ def main():
     parser.add_argument("--config", help="Path to all-configurations.yaml.")
     parser.add_argument("--data", help="Path to the input CSV dataset.")
     parser.add_argument("--output-dir", help="Directory to write results (overrides label folder).")
-    parser.add_argument("--label", help="Output/category folder, e.g. dpgan_eps1. Default: synthesizer name.") # New
+    parser.add_argument("--label", help="Output/category folder, e.g. dpgan_eps1. Default: synthesizer name.") # Neu: legt den Ergebnisordner fest
     parser.add_argument("--cinnamon-url", default=CINNAMON_URL, help="Cinnamon API base URL.")
     parser.add_argument("--email", help="User email for the Cinnamon API.")
     parser.add_argument("--password", help="Password for the Cinnamon API.")
@@ -382,6 +387,7 @@ def main():
     if args.runs < 1:
         raise ValueError("--runs must be at least 1.")
 
+    # Zur Kontrolle: welcher Synthesizer aus der Config gelesen wurde und wohin gespeichert wird.
     print(f"[sim_anon] Synthesizer: {synth_algo} | Ausgabe: {synth_dir}")
 
     succeeded = 0
@@ -430,6 +436,7 @@ def main():
 
 
                 run_stage(context, "execution")
+                # Kurze Pause, damit die Plattform die Syntheseergebnisse abgelegt hat, bevor die Evaluation startet.
                 time.sleep(10)
                 run_stage(context, "evaluation")
 
@@ -466,6 +473,7 @@ def main():
         if run_index < args.runs - 1:
             time.sleep(10)
 
+    # Zusammenfassung, damit fehlgeschlagene Runs gezielt nachgeholt werden koennen.
     print(f"[sim_anon] Fertig: {succeeded}/{args.runs} Runs erfolgreich gespeichert.")
     if failed_runs:
         print(f"[sim_anon] Fehlgeschlagene Runs (bitte nachlaufen lassen): {failed_runs}")

@@ -24,6 +24,7 @@ SUMMARY_CSV = "evaluation_summary.csv"
 # Feste Reihenfolge fuer die Baseline; alles Weitere wird erkannt.
 BASE_LABELS = ["real", "anon", "anon_synth"]
 
+# Feste Farben der Baseline, DP-Varianten bekommen ihre Farbe ueber build_colors.
 BASE_COLORS = {
     "real": "#333333",
     "anon": "#1f77b4",
@@ -43,8 +44,10 @@ def split_label(label: str) -> Tuple[str, Optional[float]]:
     """
     if "_eps" not in label:
         return label, None
+    # Alles vor "_eps" ist das Verfahren, alles danach der eps-Wert.
     method, _, raw = label.partition("_eps")
     try:
+        # Im Ordnernamen steht "_" statt ".", also 0_1 -> 0.1
         value = float(raw.replace("_", "."))
     except ValueError:
         value = None
@@ -90,6 +93,7 @@ def discover_labels(rows: List[Dict[str, Any]]) -> List[str]:
         return list(BASE_LABELS)
     prefix = "privacy_score_"
     found = [key[len(prefix):] for key in rows[0] if key.startswith(prefix)]
+    # Erst die Baseline in fester Reihenfolge, danach die DP-Varianten alphabetisch.
     ordered = [label for label in BASE_LABELS if label in found]
     ordered += sorted(label for label in found if label not in BASE_LABELS)
     return ordered
@@ -101,6 +105,7 @@ def build_colors(labels: List[str]) -> Dict[str, str]:
     """
     colors = dict(BASE_COLORS)
 
+    # Labels nach Verfahren gruppieren: {'dpgan': [(0.1, 'dpgan_eps0_1'), ...], 'pategan': [...]}
     by_method: Dict[str, List[Tuple[Optional[float], str]]] = {}
     for label in labels:
         # Nur für DP oder PATE GAN
@@ -115,6 +120,7 @@ def build_colors(labels: List[str]) -> Dict[str, str]:
         count = len(entries)
         for position, (_, label) in enumerate(entries):
             if count == 1:
+                # Nur eine Variante: mittlere Farbe der Familie nehmen.
                 shade = ramp[len(ramp) // 2]
             else:
                 # Position des Labels auf Position der entsprechenden Farbe abstimmen
@@ -128,6 +134,7 @@ def method_chains(labels: List[str]) -> List[List[str]]:
     """Pfeilketten (vorher keine eigene Funktion): Baseline als eine, jedes Verfahren nach eps sortiert."""
     chains: List[List[str]] = [] # Jede innere Liste ist Kette von Labels
 
+    # Baseline-Kette: real -> anon -> anon_synth
     baseline = [label for label in BASE_LABELS if label in labels]
     if len(baseline) > 1:
         chains.append(baseline)
@@ -198,10 +205,13 @@ def plot_privacy_utility_tradeoff(
     labels: List[str],
     colors: Dict[str, str],
 ) -> None:
+    """x = Privacy, y = Utility, ein Punkt pro Variante.
+    labels und colors werden uebergeben statt fest im Code zu stehen."""
     if plt is None:
         raise RuntimeError("matplotlib is required to plot figures. Install it with: pip install matplotlib")
 
     fig, ax = plt.subplots(figsize=(9, 6))
+    # Mittelwerte pro Variante merken, damit die Pfeile spaeter daran ansetzen koennen.
     mean_points: Dict[str, Tuple[float, float]] = {}
 
     for label in labels:
@@ -247,6 +257,7 @@ def plot_privacy_utility_tradeoff(
     # Pfeile nur innerhalb einer sinnvollen Ordnung:
     # Baseline-Pipeline und je Verfahren entlang steigender eps.
     for chain in method_chains(labels):
+        # Paare aus aufeinanderfolgenden Labels: [a, b, c] -> (a, b), (b, c)
         for previous, current in zip(chain, chain[1:]):
             if previous in mean_points and current in mean_points:
                 ax.annotate(
@@ -275,14 +286,17 @@ def plot_summary_bars(
     labels: List[str],
     colors: Dict[str, str],
 ) -> None:
+    """Zwei Balkendiagramme nebeneinander (Utility | Privacy), Mittelwert mit Std als Fehlerbalken."""
     if plt is None:
         raise RuntimeError("matplotlib is required to plot figures. Install it with: pip install matplotlib")
 
+    # (Spalte, Ersatzspalte, Titel)
     metrics = [
         ("combined_utility", "overall_utility", "Combined Utility"),
         ("privacy_score", None, "Privacy Score (1 - risk)"),
     ]
 
+    # Bild wird breiter, je mehr Varianten es gibt, damit die Balken nicht zu schmal werden.
     width = max(11.0, 1.1 * len(labels) * 2)
     fig, axes = plt.subplots(1, 2, figsize=(width, 5.0))
     for ax, (metric, fallback, title) in zip(axes, metrics):
@@ -303,6 +317,7 @@ def plot_summary_bars(
         )
         ax.set_title(title)
         ax.set_ylim(0.0, 1.0)
+        # Beschriftung schraeg stellen, sonst ueberlappen die langen Labels.
         ax.set_xticks(range(len(labels)))
         ax.set_xticklabels(labels, rotation=35, ha="right", fontsize=8)
         ax.grid(True, axis="y", linestyle="--", alpha=0.3)
@@ -337,6 +352,7 @@ def main() -> None:
         "--summary",
         help="Explicit path to the summary file (xlsx or csv).",
     )
+    # Optional: nur bestimmte Varianten plotten, z.B. --labels anon dpgan_eps1
     parser.add_argument(
         "--labels",
         nargs="*",
@@ -350,6 +366,7 @@ def main() -> None:
     if not rows:
         raise RuntimeError(f"No data found in {summary_path}")
 
+    # Ohne --labels werden alle Varianten automatisch aus der Summary erkannt.
     labels = args.labels if args.labels else discover_labels(rows)
     colors = build_colors(labels)
     print(f"Labels: {', '.join(labels)}")

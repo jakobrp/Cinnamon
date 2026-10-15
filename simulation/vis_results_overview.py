@@ -36,12 +36,14 @@ SUMMARY_CSV = "evaluation_summary.csv"
 # Feste Reihenfolge fuer die Baseline; alles Weitere wird erkannt.
 BASE_LABELS = ["real", "anon", "anon_synth"]
 
+# Anzeigenamen fuer die Baseline in Legende und Heatmap.
 BASE_TITLES = {
     "real": "Real",
     "anon": "Anonymized",
     "anon_synth": "Anon+Synth",
 }
 
+# Feste Farben der Baseline, damit sie in allen Plots gleich aussehen.
 BASE_COLORS = {
     "real": "#333333",
     "anon": "#1b6ca8",
@@ -52,8 +54,7 @@ BASE_COLORS = {
 METHOD_RAMPS = [
     ["#9ecae1", "#4292c6", "#08519c"],  # Blau
     ["#fcae91", "#fb6a4a", "#a50f15"],  # Rot
-    ["#c7e9c0", "#74c476", "#238b45"],  # Gruen
-    ["#dadaeb", "#9e9ac8", "#6a51a3"],  # Violett
+
 ]
 
 
@@ -61,8 +62,10 @@ def split_label(label: str) -> Tuple[str, Optional[float]]:
     """'dpgan_eps0_1' -> ('dpgan', 0.1). Ohne eps: (label, None)."""
     if "_eps" not in label:
         return label, None
+    # Alles vor "_eps" ist das Verfahren, alles danach der eps-Wert.
     method, _, raw = label.partition("_eps")
     try:
+        # Im Ordnernamen steht "_" statt ".", also 0_1 -> 0.1
         value = float(raw.replace("_", "."))
     except ValueError:
         value = None
@@ -70,24 +73,31 @@ def split_label(label: str) -> Tuple[str, Optional[float]]:
 
 
 def label_title(label: str) -> str:
+    """Lesbarer Name fuer die Legende, z.B. 'dpgan_eps0_1' -> 'DPGAN eps=0.1'."""
     if label in BASE_TITLES:
         return BASE_TITLES[label]
     method, eps = split_label(label)
     pretty = method.upper().replace("_", " ")
     if eps is None:
         return pretty
+    # :g schneidet unnoetige Nullen ab (1.0 -> 1)
     eps_text = f"{eps:g}"
     return f"{pretty} \u03b5={eps_text}"
 
 
 def group_by_method(labels: List[str]) -> Dict[str, List[Tuple[Optional[float], str]]]:
+    """Gruppiert die DP-Varianten nach Verfahren, jeweils aufsteigend nach eps sortiert.
+    Beispiel: {'dpgan': [(0.1, 'dpgan_eps0_1'), (1.0, 'dpgan_eps1')], 'pategan': [...]}
+    Die Baseline wird hier uebersprungen."""
     by_method: Dict[str, List[Tuple[Optional[float], str]]] = {}
     for label in labels:
         if label in BASE_LABELS:
             continue
         method, eps = split_label(label)
+        # Legt fuer ein neues Verfahren eine leere Liste an und haengt das Label an.
         by_method.setdefault(method, []).append((eps, label))
     for entries in by_method.values():
+        # Nach eps sortieren; Labels ohne eps kommen ans Ende.
         entries.sort(key=lambda item: (item[0] is None, item[0]))
     return by_method
 
@@ -97,14 +107,18 @@ def build_colors(labels: List[str]) -> Dict[str, str]:
     colors = dict(BASE_COLORS)
     by_method = group_by_method(labels)
 
+    # Jedes Verfahren bekommt eine eigene Farbfamilie (alphabetisch: dpgan -> Blau, pategan -> Rot).
     for index, method in enumerate(sorted(by_method)):
         ramp = METHOD_RAMPS[index % len(METHOD_RAMPS)]
         entries = by_method[method]
         count = len(entries)
         for position, (_, label) in enumerate(entries):
             if count == 1:
+                # Nur eine Variante: mittlere Farbe nehmen.
                 shade = ramp[len(ramp) // 2]
             else:
+                # Varianten gleichmaessig ueber die Farbfamilie verteilen.
+                # Bei 3 eps-Werten: 0 -> hell, 1 -> mittel, 2 -> dunkel
                 step = round(position * (len(ramp) - 1) / (count - 1))
                 shade = ramp[step]
             colors[label] = shade
@@ -115,10 +129,12 @@ def method_chains(labels: List[str]) -> List[List[str]]:
     """Ketten fuer die Pfeile: Baseline-Pipeline, dann je Verfahren nach eps."""
     chains: List[List[str]] = []
 
+    # Baseline: real -> anon -> anon_synth
     baseline = [label for label in BASE_LABELS if label in labels]
     if len(baseline) > 1:
         chains.append(baseline)
 
+    # Pro Verfahren: kleines eps -> grosses eps
     by_method = group_by_method(labels)
     for method in sorted(by_method):
         chain = [label for _, label in by_method[method]]
@@ -160,6 +176,7 @@ def read_summary_csv(summary_path: Path) -> List[Dict[str, Any]]:
 
 def discover_labels(dataset_rows: Dict[str, List[Dict[str, Any]]]) -> List[str]:
     """Vereinigung der Label ueber ALLE Datensaetze, damit Farben konsistent sind."""
+    # Jede Variante hat eine Spalte "privacy_score_<label>" in der Summary.
     prefix = "privacy_score_"
     found = set()
     for rows in dataset_rows.values():
@@ -168,6 +185,7 @@ def discover_labels(dataset_rows: Dict[str, List[Dict[str, Any]]]) -> List[str]:
         for key in rows[0]:
             if key.startswith(prefix):
                 found.add(key[len(prefix):])
+    # Reihenfolge: erst Baseline, dann pro Verfahren nach eps sortiert.
     ordered = [label for label in BASE_LABELS if label in found]
     extras = sorted(found - set(BASE_LABELS))
     by_method = group_by_method(extras)
@@ -280,6 +298,7 @@ def plot_privacy_utility_tradeoff(
     labels: List[str],
     colors: Dict[str, str],
 ) -> None:
+    """Ein Teilplot pro Datensatz: x = Privacy, y = Utility, ein Punkt pro Variante."""
     if plt is None:
         raise RuntimeError("matplotlib is required to plot figures. Install it with: pip install matplotlib")
 
@@ -314,10 +333,12 @@ def plot_privacy_utility_tradeoff(
     )
     axes_list = flatten_axes(axes)
 
+    # Reihenfolgen fuer die Pfeile einmal vorab bestimmen (gilt fuer alle Datensaetze).
     chains = method_chains(labels)
 
     for ax, dataset_name in zip(axes_list, dataset_names):
         rows = dataset_rows[dataset_name]
+        # Mittelwerte pro Variante merken, damit die Pfeile spaeter daran ansetzen koennen.
         mean_points: Dict[str, Tuple[float, float]] = {}
 
         for label in labels:
@@ -341,6 +362,7 @@ def plot_privacy_utility_tradeoff(
                     zorder=1,
                 )
 
+            # Mittelwert ueber alle Runs als grosser Punkt darueber.
             risks = collect_metric(rows, "privacy_score", label)
             utilities = collect_metric(rows, "combined_utility", label, fallback_key="overall_utility")
             mean_risk, _ = compute_stats(risks)
@@ -361,6 +383,7 @@ def plot_privacy_utility_tradeoff(
 
         # Pfeile: Baseline-Pipeline und je Verfahren entlang steigender eps.
         for chain in chains:
+            # Paare aus aufeinanderfolgenden Labels: [a, b, c] -> (a, b), (b, c)
             for previous, current in zip(chain, chain[1:]):
                 if previous in mean_points and current in mean_points:
                     ax.annotate(
@@ -405,8 +428,10 @@ def plot_privacy_utility_tradeoff(
         )
         for label in labels
     ]
+    # Legende hoechstens 5 Spalten breit, bei mehr Varianten in mehreren Zeilen.
     legend_cols = min(len(labels), 5)
     legend_rows = math.ceil(len(labels) / legend_cols)
+    # Je mehr Legendenzeilen, desto weiter rutschen die Plots nach unten.
     top = 0.93 - 0.02 * (legend_rows - 1)
     fig.legend(
         handles=legend_handles,
@@ -427,6 +452,7 @@ def plot_privacy_utility_heatmap(
     labels: List[str],
 ) -> None:
     """Zeilen = Varianten, Spaltengruppen = Datensaetze (Utility | Privacy)."""
+    # Gedreht gegenueber vorher, weil mit den DP-Varianten sonst zu viele Spalten entstehen.
     if plt is None or ListedColormap is None or Normalize is None:
         raise RuntimeError("matplotlib is required to plot figures. Install it with: pip install matplotlib")
     if np is None:
@@ -436,12 +462,15 @@ def plot_privacy_utility_heatmap(
     if not dataset_names:
         raise RuntimeError("No datasets found to plot.")
 
+    # Pro Datensatz zwei Spalten: (Titel, Spaltenname in der Summary, Ersatzspalte)
     metrics = [
         ("Utility", "combined_utility", "overall_utility"),
         ("Privacy", "privacy_score", None),
     ]
+    # Breite der Luecke zwischen zwei Datensaetzen.
     gap_width = 0.5
 
+    # Spalten festlegen: Datensatz A (Utility, Privacy), Luecke, Datensatz B (...), ...
     col_specs: List[Dict[str, Any]] = []
     for index, dataset_name in enumerate(dataset_names):
         for metric_title, metric_key, fallback in metrics:
@@ -457,6 +486,7 @@ def plot_privacy_utility_heatmap(
         if index < len(dataset_names) - 1:
             col_specs.append({"is_gap": True})
 
+    # Matrix fuellen: eine Zeile pro Variante, eine Spalte pro col_spec.
     data: List[List[float]] = []
     stds: List[List[Optional[float]]] = []
     for label in labels:
@@ -464,6 +494,7 @@ def plot_privacy_utility_heatmap(
         row_stds: List[Optional[float]] = []
         for spec in col_specs:
             if spec["is_gap"]:
+                # NaN wird spaeter weiss gezeichnet.
                 row_values.append(float("nan"))
                 row_stds.append(None)
                 continue
@@ -480,6 +511,8 @@ def plot_privacy_utility_heatmap(
         stds.append(row_stds)
 
     # Zahlen zusaetzlich als CSV und JSON ablegen (Grundlage fuer Tabellen).
+    # Long-Format: eine Zeile pro Datensatz x Variante x Metrik,
+    # damit neue Varianten keine neuen Spalten erzeugen.
     csv_output = output_path.with_suffix(".csv")
     json_output = output_path.with_suffix(".json")
 
@@ -488,6 +521,7 @@ def plot_privacy_utility_heatmap(
         writer.writerow(["dataset", "variant", "metric", "mean", "std"])
         for label, row_values, row_stds in zip(labels, data, stds):
             for spec, value, std in zip(col_specs, row_values, row_stds):
+                # value != value ist nur bei NaN wahr -> Luecken und fehlende Werte ueberspringen.
                 if spec["is_gap"] or value != value:
                     continue
                 writer.writerow(
@@ -517,6 +551,7 @@ def plot_privacy_utility_heatmap(
     cmap.set_bad("#ffffff")
     norm = Normalize(vmin=0, vmax=1)
 
+    # Bildgroesse waechst mit der Anzahl der Spalten (Breite) und Varianten (Hoehe).
     col_widths = [gap_width if spec["is_gap"] else 1.0 for spec in col_specs]
     total_width = sum(col_widths)
     fig_width = max(8.0, 0.95 * total_width + 3.0)
@@ -570,8 +605,9 @@ def plot_privacy_utility_heatmap(
         )
         col_index += len(metrics)
         if index < len(dataset_names) - 1:
-            col_index += 1
+            col_index += 1  # Luecke ueberspringen
 
+    # Mittelwert +- Standardabweichung in jede Zelle schreiben.
     for i in range(len(labels)):
         for j, center in enumerate(centers):
             value = data[i][j]
@@ -643,6 +679,7 @@ def main() -> None:
         "--summary",
         help="Explicit path to the summary file (xlsx or csv).",
     )
+    # Optional: nur bestimmte Varianten plotten, z.B. --labels anon dpgan_eps1
     parser.add_argument(
         "--labels",
         nargs="*",
@@ -670,6 +707,7 @@ def main() -> None:
     if not dataset_rows:
         raise RuntimeError("No data found in any evaluation summary.")
 
+    # Ohne --labels werden alle Varianten automatisch aus den Summaries erkannt.
     labels = args.labels if args.labels else discover_labels(dataset_rows)
     colors = build_colors(labels)
     print(f"Datasets: {', '.join(sorted(dataset_rows))}")
