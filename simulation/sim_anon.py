@@ -19,8 +19,8 @@ POLL_INTERVAL_SECONDS = 5
 RUNS = 5
 DEFAULT_SYNTH_ALGO = "arf"
 
-# Run: python simulation/sim_anon.py --dataset pima_diabetes --runs 5 --holdout 0.2
-# Für die echten Läufe: --label dpgan_eps1 (o. ä.), damit sich Configs nicht überschreiben.
+# Run: python simulation/sim_anon.py --dataset heart_failure --label pategan_eps5 --config dataset_configs/heart_failure/all-configurations-pategan.yaml --holdout 0.2 --runs 25
+# --label legt den Ergebnisordner fest (experiment_results/<dataset>/<label>), damit sich Läufe nicht überschreiben.
 
 _TOP_LEVEL_KEY_RE = re.compile(r"^[A-Za-z0-9_-]+:\s*(#.*)?$")
 
